@@ -8,13 +8,13 @@ app.use(cors());
 app.use(express.json());
 
 // Configurações Sepolia
-const SEPOLIA_RPC = process.env.SEPOLIA_URL; // ex: Infura/Alchemy
-const PRIVATE_KEY = process.env.PRIVATE_KEY; // carteira com ETH de teste
+const SEPOLIA_RPC = process.env.SEPOLIA_URL; 
+const PRIVATE_KEY = process.env.PRIVATE_KEY; 
 
 const provider = new ethers.JsonRpcProvider(SEPOLIA_RPC);
 const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 
-// Mock Pix - cria pagamento fake
+// Mock Pix
 app.post("/api/pagamento", async (req, res) => {
   const { nome, email, enderecoEthereum, valorEth } = req.body;
 
@@ -22,11 +22,10 @@ app.post("/api/pagamento", async (req, res) => {
     return res.status(400).json({ error: "Preencha todos os campos" });
   }
 
-  // Cria transação fake
+  // Cria transação simulada
   const transactionId = `PIXFAKE-${Date.now()}`;
   res.json({
     transactionId,
-    pixQrCode: `https://fake-qrcode.com/${transactionId}`,
     status: "PENDING",
   });
 
@@ -50,7 +49,7 @@ app.post("/api/pagamento", async (req, res) => {
 
 // Test endpoint
 app.get("/", (req, res) => {
-  res.send("API Pix Fake + Sepolia ETH funcionando!");
+  res.send("API Pix Mock + Sepolia ETH funcionando!");
 });
 
 // Start server
