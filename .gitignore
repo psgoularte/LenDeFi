@@ -1,2 +1,55 @@
+# =========================
+# Node / Next.js
+# =========================
 node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# Next.js build
+.next
+out
+build
+
+# Vercel
+.vercel
+
+# Coverage
+coverage
+
+# =========================
+# Hardhat / Solidity
+# =========================
+artifacts
+cache
+typechain-types
+coverage.json
+
+# Ignore broadcast data (se usar foundry/forge junto)
+broadcast
+
+# =========================
+# Ambiente e configs locais
+# =========================
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs / SO
+.idea
+.vscode
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# =========================
+# Outros opcionais
+# =========================
+*.tsbuildinfo
