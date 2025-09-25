@@ -1,58 +1,96 @@
 require("dotenv").config();
-const express = require("express");
-const { ethers } = require("ethers");
-const cors = require("cors");
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import { createPublicClient, createWalletClient, http, isAddress, parseEther, Hex } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { sepolia } from 'viem/chains';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configurações Sepolia
-const SEPOLIA_RPC = process.env.SEPOLIA_URL; 
-const PRIVATE_KEY = process.env.PRIVATE_KEY; 
+interface PagamentoRequestBody {
+  enderecoEthereum: string;
+  valorEth: string;
+}
 
-const provider = new ethers.JsonRpcProvider(SEPOLIA_RPC);
-const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+const SEPOLIA_RPC = process.env.SEPOLIA_URL as string;
+const PRIVATE_KEY = process.env.PRIVATE_KEY as Hex;
 
-// Mock Pix
-app.post("/api/pagamento", async (req, res) => {
-  const { nome, email, enderecoEthereum, valorEth } = req.body;
+const account = privateKeyToAccount(PRIVATE_KEY);
 
-  if (!nome || !email || !enderecoEthereum || !valorEth) {
-    return res.status(400).json({ error: "Preencha todos os campos" });
+const walletClient = createWalletClient({
+  account,
+  chain: sepolia,
+  transport: http(SEPOLIA_RPC),
+});
+
+// Criar o Public Client (para consultar a blockchain, como esperar por uma transação)
+const publicClient = createPublicClient({
+    chain: sepolia,
+    transport: http(SEPOLIA_RPC),
+})
+
+
+// Endpoint que simula o PIX e envia ETH
+app.post("/api/pagamento", async (req: Request<{}, {}, PagamentoRequestBody>, res: Response) => {
+  const { enderecoEthereum, valorEth } = req.body;
+
+  if (!enderecoEthereum || !valorEth) {
+    return res.status(400).json({ error: "Endereço Ethereum e valor são obrigatórios." });
   }
 
-  // Cria transação simulada
-  const transactionId = `PIXFAKE-${Date.now()}`;
+  // Validação de endereço
+  if (!isAddress(enderecoEthereum)) {
+    return res.status(400).json({ error: "O endereço Ethereum fornecido é inválido." });
+  }
+
+  let valorEmWei: bigint;
+  try {
+    // Conversão de valor
+    valorEmWei = parseEther(valorEth);
+  } catch (error) {
+    return res.status(400).json({ error: "O valor em ETH fornecido é inválido." });
+  }
+
+  const transactionId = `PIX-${Date.now()}`;
   res.json({
+    message: "Pagamento recebido, o ETH será enviado em breve.",
     transactionId,
     status: "PENDING",
   });
 
-  console.log(`Pagamento iniciado: ${transactionId} para ${nome}`);
+  console.log(`[${transactionId}] Pagamento recebido para ${enderecoEthereum}. Processando...`);
 
-  // Simula confirmação após 5s
   setTimeout(async () => {
-    console.log(`Pagamento confirmado: ${transactionId}`);
     try {
-      const tx = await wallet.sendTransaction({
+      console.log(`[${transactionId}] Enviando ${valorEth} ETH para ${enderecoEthereum}...`);
+      
+      // Envio de transação com viem
+      const txHash = await walletClient.sendTransaction({
         to: enderecoEthereum,
-        value: ethers.parseEther(valorEth),
+        value: valorEmWei,
       });
-      await tx.wait();
-      console.log(`ETH de teste enviado para ${enderecoEthereum}: ${tx.hash}`);
-    } catch (err) {
-      console.error("Erro ao enviar ETH:", err);
+
+      console.log(`[${transactionId}] Transação enviada. Hash: ${txHash}. Aguardando confirmação...`);
+
+      // Esperar a transação ser confirmada
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+      console.log(`[${transactionId}] SUCESSO! ETH enviado. Confirmado no bloco: ${receipt.blockNumber}`);
+
+    } catch (err: any) {
+      console.error(`[${transactionId}] FALHA ao enviar ETH para ${enderecoEthereum}:`, err.message || err);
     }
   }, 5000);
 });
 
-// Test endpoint
-app.get("/", (req, res) => {
-  res.send("API Pix Mock + Sepolia ETH funcionando!");
+
+// Endpoint de teste
+app.get("/", (req: Request, res: Response) => {
+  res.send("API Pix Mock + Sepolia ETH funcionando com VIEM!");
 });
 
-// Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
