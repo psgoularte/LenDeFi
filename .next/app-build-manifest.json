@@ -1,0 +1,37 @@
+{
+  "pages": {
+    "/page": [
+      "static/chunks/3c468_next_dist_231aee42._.js",
+      "static/chunks/app_favicon_ico_mjs_b1decd7c._.js",
+      "static/chunks/[root-of-the-server]__28bc9c2a._.css",
+      "static/chunks/app_provider_tsx_046bb183._.js",
+      "static/chunks/_9f624c12._.js",
+      "static/chunks/app_layout_tsx_93742981._.js",
+      "static/chunks/3c468_next_dist_client_components_builtin_global-error_a6a2a377.js",
+      "static/chunks/node_modules__pnpm_26c86733._.js",
+      "static/chunks/_c9e1ef10._.js",
+      "static/chunks/3c468_next_05e8592a._.js",
+      "static/chunks/0894d_tailwind-merge_dist_bundle-mjs_mjs_705de4d7._.js",
+      "static/chunks/c8e86_@rainbow-me_rainbowkit_dist_cc5a5f67._.js",
+      "static/chunks/5c3f6_@wagmi_core_dist_esm_e7775483._.js",
+      "static/chunks/83793_viem__esm_utils_02da2daa._.js",
+      "static/chunks/83793_viem__esm_errors_a3d3a85d._.js",
+      "static/chunks/83793_viem__esm_actions_3653b49d._.js",
+      "static/chunks/83793_viem__esm_b2ec13bc._.js",
+      "static/chunks/6ff39_@noble_curves_esm_7ad2755c._.js",
+      "static/chunks/b928a_ox__esm_1e755b92._.js",
+      "static/chunks/f9f5b_@tanstack_query-core_build_modern_b90efec7._.js",
+      "static/chunks/node_modules__pnpm_24365196._.js",
+      "static/chunks/app_page_tsx_a6a2a377._.js",
+      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_4899e2d1._.js",
+      "static/chunks/3c468_next_dist_compiled_react-dom_e97b41d6._.js",
+      "static/chunks/3c468_next_dist_compiled_next-devtools_index_f073d207.js",
+      "static/chunks/3c468_next_dist_compiled_729a8040._.js",
+      "static/chunks/3c468_next_dist_client_e35a54be._.js",
+      "static/chunks/3c468_next_dist_f3163422._.js",
+      "static/chunks/69652_@swc_helpers_cjs_77b72907._.js",
+      "static/chunks/_a0ff3932._.js",
+      "static/chunks/turbopack-_7f527a84._.js"
+    ]
+  }
+}
