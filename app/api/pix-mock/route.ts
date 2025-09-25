@@ -1,4 +1,3 @@
-require("dotenv").config();
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { createPublicClient, createWalletClient, http, isAddress, parseEther, Hex } from 'viem';
