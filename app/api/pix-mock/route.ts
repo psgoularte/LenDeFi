@@ -1,3 +1,4 @@
+require("dotenv").config();
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { createPublicClient, createWalletClient, http, isAddress, parseEther, Hex } from 'viem';
@@ -24,31 +25,29 @@ const walletClient = createWalletClient({
   transport: http(SEPOLIA_RPC),
 });
 
-// Criar o Public Client (para consultar a blockchain, como esperar por uma transação)
 const publicClient = createPublicClient({
     chain: sepolia,
     transport: http(SEPOLIA_RPC),
-})
+});
 
-
-// Endpoint que simula o PIX e envia ETH
-app.post("/api/pagamento", async (req: Request<{}, {}, PagamentoRequestBody>, res: Response) => {
+app.post("/api/pagamento", async (
+    req: Request<Record<string, never>, Record<string, never>, PagamentoRequestBody>, 
+    res: Response
+) => {
   const { enderecoEthereum, valorEth } = req.body;
 
   if (!enderecoEthereum || !valorEth) {
     return res.status(400).json({ error: "Endereço Ethereum e valor são obrigatórios." });
   }
 
-  // Validação de endereço
   if (!isAddress(enderecoEthereum)) {
     return res.status(400).json({ error: "O endereço Ethereum fornecido é inválido." });
   }
 
   let valorEmWei: bigint;
   try {
-    // Conversão de valor
     valorEmWei = parseEther(valorEth);
-  } catch (error) {
+  } catch { 
     return res.status(400).json({ error: "O valor em ETH fornecido é inválido." });
   }
 
@@ -65,7 +64,6 @@ app.post("/api/pagamento", async (req: Request<{}, {}, PagamentoRequestBody>, re
     try {
       console.log(`[${transactionId}] Enviando ${valorEth} ETH para ${enderecoEthereum}...`);
       
-      // Envio de transação com viem
       const txHash = await walletClient.sendTransaction({
         to: enderecoEthereum,
         value: valorEmWei,
@@ -73,19 +71,20 @@ app.post("/api/pagamento", async (req: Request<{}, {}, PagamentoRequestBody>, re
 
       console.log(`[${transactionId}] Transação enviada. Hash: ${txHash}. Aguardando confirmação...`);
 
-      // Esperar a transação ser confirmada
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
 
       console.log(`[${transactionId}] SUCESSO! ETH enviado. Confirmado no bloco: ${receipt.blockNumber}`);
 
-    } catch (err: any) {
-      console.error(`[${transactionId}] FALHA ao enviar ETH para ${enderecoEthereum}:`, err.message || err);
+    } catch (err: unknown) { 
+      let errorMessage = "Ocorreu uma falha desconhecida.";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      console.error(`[${transactionId}] FALHA ao enviar ETH para ${enderecoEthereum}:`, errorMessage);
     }
   }, 5000);
 });
 
-
-// Endpoint de teste
 app.get("/", (req: Request, res: Response) => {
   res.send("API Pix Mock + Sepolia ETH funcionando com VIEM!");
 });
