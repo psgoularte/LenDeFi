@@ -1,4 +1,3 @@
-
 import 'dotenv/config'; 
 import express from 'express';
 import cors from 'cors';
@@ -26,16 +25,22 @@ try {
   walletClient = createWalletClient({ account, chain: sepolia, transport: http(SEPOLIA_RPC) });
   publicClient = createPublicClient({ chain: sepolia, transport: http(SEPOLIA_RPC) });
   console.log("✅ Successfully connected to Sepolia and loaded wallet.");
-} catch (error) {
-    console.error("❌ FATAL ERROR: Failed to connect or load wallet.", error);
+} catch (error: unknown) {
+    let errorMessage = "Failed to connect or load wallet.";
+    if (error instanceof Error) {
+        errorMessage += ` Details: ${error.message}`;
+    }
+    console.error("❌ FATAL ERROR:", errorMessage);
     process.exit(1);
 }
 
 app.post("/api/pagamento", async (req, res) => {
-  console.log("Dados recebidos do frontend:", req.body); 
+  console.log("Request body received:", req.body); 
+
   const { nome, cpf, enderecoEthereum, valorEth } = req.body;
 
   if (!nome || !cpf || !enderecoEthereum || !valorEth) {
+    console.error("Validation failed. Missing fields:", { nome, cpf, enderecoEthereum, valorEth });
     return res.status(400).json({ error: "All fields are required" });
   }
   
@@ -65,15 +70,15 @@ app.post("/api/pagamento", async (req, res) => {
       console.log(`[${transactionId}] Transaction sent. Hash: ${txHash}. Awaiting confirmation...`);
       await publicClient.waitForTransactionReceipt({ hash: txHash });
       console.log(`✅ [${transactionId}] SUCCESS! Test ETH sent.`);
-    } catch (err: unknown) {
-  let errorMessage = "An unknown error occurred while sending the transaction.";
-  
-  if (err instanceof Error) {
-    errorMessage = (err as any).shortMessage || err.message;
-  }
-  
-  console.error(`❌ [${transactionId}] FAILED to send ETH:`, errorMessage);
-}
+    } catch (err: unknown) { 
+      let errorMessage = "An unknown error occurred during the transaction.";
+      
+      if (err instanceof Error) {
+        errorMessage = (err as any).shortMessage || err.message;
+      }
+      
+      console.error(`❌ [${transactionId}] FAILED to send ETH:`, errorMessage);
+    }
   }, 5000);
 });
 
