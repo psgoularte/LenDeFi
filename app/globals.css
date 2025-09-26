@@ -27,7 +27,7 @@
   --input: oklch(0.12 0 0); /* Dark input backgrounds */
   /* Brightened orange focus rings */
   --ring: oklch(0.75 0.22 45 / 0.5); /* Brighter orange focus rings */
-  --chart-1: oklch(0.55 0.22 25); /* Red chart color */
+  --chart-1: oklch(0.55 0.22 15); /* Purer red chart color */
   --chart-2: oklch(0.6 0.15 200); /* Blue chart color */
   /* Brightened orange chart color */
   --chart-3: oklch(0.75 0.22 45); /* Brighter orange chart color */
@@ -75,7 +75,7 @@
   --input: oklch(0.12 0 0); /* Dark gray inputs */
   /* Brightened orange focus rings for dark mode */
   --ring: oklch(0.75 0.22 45 / 0.5); /* Brighter orange focus rings */
-  --chart-1: oklch(0.6 0.25 25); /* Brighter red for charts */
+  --chart-1: oklch(0.6 0.25 15); /* Brighter purer red for charts */
   --chart-2: oklch(0.7 0.18 200); /* Brighter blue for charts */
   /* Brightened orange for charts in dark mode */
   --chart-3: oklch(0.75 0.22 45); /* Brighter orange for charts */
