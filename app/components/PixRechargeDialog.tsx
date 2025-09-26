@@ -73,7 +73,8 @@ export function PixRechargeDialog() {
     setFeedbackMessage("");
     setIsError(false);
     try {
-      const response = await fetch('http://localhost:4000/api/pagamento', {
+      const apiURL = `${process.env.NEXT_PUBLIC_API_URL}/api/pagamento`;
+      const response = await fetch(apiURL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
