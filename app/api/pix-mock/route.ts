@@ -65,9 +65,15 @@ app.post("/api/pagamento", async (req, res) => {
       console.log(`[${transactionId}] Transaction sent. Hash: ${txHash}. Awaiting confirmation...`);
       await publicClient.waitForTransactionReceipt({ hash: txHash });
       console.log(`✅ [${transactionId}] SUCCESS! Test ETH sent.`);
-    } catch (err: any) {
-      console.error(`❌ [${transactionId}] FAILED to send ETH:`, err.shortMessage || err.message || err);
-    }
+    } catch (err: unknown) {
+  let errorMessage = "An unknown error occurred while sending the transaction.";
+  
+  if (err instanceof Error) {
+    errorMessage = (err as any).shortMessage || err.message;
+  }
+  
+  console.error(`❌ [${transactionId}] FAILED to send ETH:`, errorMessage);
+}
   }, 5000);
 });
 
