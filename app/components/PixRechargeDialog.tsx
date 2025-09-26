@@ -73,7 +73,7 @@ export function PixRechargeDialog() {
     setFeedbackMessage("");
     setIsError(false);
     try {
-      const apiURL = `${process.env.NEXT_PUBLIC_API_URL}/api/pagamento`;
+      const apiURL = `${process.env.NEXT_PUBLIC_API_URL}/api/pix-mock`;
       const response = await fetch(apiURL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
