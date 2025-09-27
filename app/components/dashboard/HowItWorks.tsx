@@ -1,14 +1,62 @@
-import { Card, CardContent } from "@/cache/components/ui/card";
 import { Users, TrendingUp, ShieldCheck } from "lucide-react";
+// As importações originais de Card e CardContent foram substituídas por simulações simples
+// para evitar erros de compilação em ambientes restritos de módulos.
+
+// SIMULAÇÃO: Substituição dos componentes Card e CardContent
+function CardSimples({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-xl border bg-card text-card-foreground shadow-sm bg-gray-900 border-gray-700/80 ${className}`}>
+      {children}
+    </div>
+  );
+}
+function CardContentSimples({ className, children }: { className: string, children: React.ReactNode }) {
+  return (
+    <div className={className}>
+      {children}
+    </div>
+  );
+}
+
+// Componente YouTubeEmbed embutido neste ficheiro.
+function YouTubeEmbed({ videoId }: { videoId: string }) {
+    // Usa a técnica de 'padding-top' para garantir a proporção 16:9, tornando o vídeo responsivo.
+    return (
+        <div className="relative w-full overflow-hidden rounded-xl shadow-2xl border border-gray-700/50 bg-black/50" 
+             style={{ paddingTop: '56.25%' }}>
+          <iframe
+            className="absolute top-0 left-0 w-full h-full"
+            // Use o ID de vídeo desejado aqui.
+            src={`https://www.youtube.com/embed/${videoId}`}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title="LenDeFi Explainer Video"
+          ></iframe>
+        </div>
+      );
+}
 
 export function HowItWorks() {
   return (
-    <section className="bg-card border-t">
+    <section className="bg-card border-t text-white">
       <section className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">
+          <h2 className="text-3xl font-bold text-center mb-8 text-primary">
             How LenDeFi Works
           </h2>
+          
+          {/* --- NOVO: CAIXA DE VÍDEO --- */}
+          <div className="mt-8 mb-16 max-w-4xl mx-auto">
+            <h3 className="text-2xl font-semibold mb-4 text-center text-white">
+              Watch Our Explainer Video
+            </h3>
+            {/* Vídeo atualizado com o ID: HxP0IYfYbts */}
+            <YouTubeEmbed videoId="HxP0IYfYbts" />
+          </div>
+          {/* ----------------------------- */}
+
+
           <div className="space-y-12">
             {/* --- ETAPA 1: CRIAÇÃO --- */}
             <div className="relative flex items-start">
@@ -16,13 +64,14 @@ export function HowItWorks() {
                 <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground">
                   <span className="font-bold text-lg">1</span>
                 </div>
-                <div className="absolute left-6 top-12 w-px h-full bg-border"></div>
+                {/* Linha divisória. Estendida para ser mais visível. */}
+                <div className="absolute left-6 top-12 w-px h-[calc(100%-48px)] bg-gray-600"></div>
               </div>
               <div className="ml-6">
                 <h3 className="text-xl font-bold text-primary">
                   Create Loan Request
                 </h3>
-                <p className="mt-2 text-muted-foreground">
+                <p className="mt-2 text-gray-400">
                   The process begins when a borrower submits a loan request,
                   defining the amount, interest, and duration. An optional
                   collateral can be added to increase investor confidence.
@@ -36,35 +85,35 @@ export function HowItWorks() {
                 <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground">
                   <span className="font-bold text-lg">2</span>
                 </div>
-                <div className="absolute left-6 top-12 w-px h-full bg-border"></div>
+                <div className="absolute left-6 top-12 w-px h-[calc(100%-48px)] bg-gray-600"></div>
               </div>
               <div className="ml-6 w-full">
                 <h3 className="text-xl font-bold text-primary">
                   Funding Period
                 </h3>
-                <p className="mt-2 text-muted-foreground">
+                <p className="mt-2 text-gray-400">
                   The loan is now open for investors. Two paths are possible
                   from here:
                 </p>
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-background border border-border rounded-lg p-6">
+                  <div className="bg-background border border-gray-700/80 rounded-lg p-6 text-white">
                     <h4 className="font-semibold text-lg">
                       Path A: Not Funded
                     </h4>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="mt-2 text-sm text-gray-400">
                       If the funding deadline passes without an investor, the
                       loan expires. The borrower can then call the{" "}
-                      <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                      <code className="bg-gray-700 px-1 py-0.5 rounded text-xs text-white">
                         cancelLoan
                       </code>{" "}
                       function to have their collateral fully refunded.
                     </p>
                   </div>
-                  <div className="bg-background border-2 border-accent rounded-lg p-6">
+                  <div className="bg-background border-2 border-accent rounded-lg p-6 text-white">
                     <h4 className="font-semibold text-lg text-accent">
                       Path B: Funded
                     </h4>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="mt-2 text-sm text-gray-400">
                       An investor funds the loan, changing its status to
                       Funded. The borrower can then withdraw the funds, making
                       the loan Active. This is the start of the happy path.
@@ -85,16 +134,16 @@ export function HowItWorks() {
                 <h3 className="text-xl font-bold text-primary">
                   Loan Outcome
                 </h3>
-                <p className="mt-2 text-muted-foreground">
+                <p className="mt-2 text-gray-400">
                   Once the loan is active and the duration ends, one of two
                   outcomes will occur:
                 </p>
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-background border-2 border-accent rounded-lg p-6">
+                  <div className="bg-background border-2 border-accent rounded-lg p-6 text-white">
                     <h4 className="font-semibold text-lg text-accent">
                       Outcome: Repaid
                     </h4>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="mt-2 text-sm text-gray-400">
                       The borrower repays the loan plus interest. The
                       collateral is{" "}
                       <span className="font-bold">
@@ -104,11 +153,11 @@ export function HowItWorks() {
                       their principal and profit.
                     </p>
                   </div>
-                  <div className="bg-background border border-border rounded-lg p-6">
+                  <div className="bg-background border border-gray-700/80 rounded-lg p-6 text-white">
                     <h4 className="font-semibold text-lg">
                       Outcome: Defaulted
                     </h4>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="mt-2 text-sm text-gray-400">
                       The borrower fails to repay on time. The loan status
                       changes to Defaulted, allowing the investor to claim the
                       collateral as compensation for the loss (90% for the
@@ -120,42 +169,42 @@ export function HowItWorks() {
             </div>
 
             <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="border-primary/20">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <CardSimples className="border-primary/20">
+                <CardContentSimples className="p-6 text-center">
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 bg-primary/20">
                     <TrendingUp className="h-6 w-6 text-primary" />
                   </div>
-                  <h4 className="font-semibold mb-2">Higher Returns</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <h4 className="font-semibold mb-2 text-white">Higher Returns</h4>
+                  <p className="text-sm text-gray-400">
                     Earn competitive returns by cutting out traditional banking
                     intermediaries.
                   </p>
-                </CardContent>
-              </Card>
-              <Card className="border-accent/20">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                </CardContentSimples>
+              </CardSimples>
+              <CardSimples className="border-accent/20">
+                <CardContentSimples className="p-6 text-center">
+                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4 bg-accent/20">
                     <ShieldCheck className="h-6 w-6 text-accent" />
                   </div>
-                  <h4 className="font-semibold mb-2">Flexible Security</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <h4 className="font-semibold mb-2 text-white">Flexible Security</h4>
+                  <p className="text-sm text-gray-400">
                     Choose your risk level. Invest in loans secured by
                     reputation or by optional collateral.
                   </p>
-                </CardContent>
-              </Card>
-              <Card className="border-primary/20">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                </CardContentSimples>
+              </CardSimples>
+              <CardSimples className="border-primary/20">
+                <CardContentSimples className="p-6 text-center">
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 bg-primary/20">
                     <Users className="h-6 w-6 text-primary" />
                   </div>
-                  <h4 className="font-semibold mb-2">Global Access</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <h4 className="font-semibold mb-2 text-white">Global Access</h4>
+                  <p className="text-sm text-gray-400">
                     Connect with borrowers and investors worldwide, 24/7,
                     without geographical restrictions.
                   </p>
-                </CardContent>
-              </Card>
+                </CardContentSimples>
+              </CardSimples>
             </div>
           </div>
         </div>
