@@ -19,6 +19,7 @@ import { Button } from "@/cache/components/ui/button";
 import { Switch } from "@/cache/components/ui/switch";
 import { Label } from "@/cache/components/ui/label";
 import { Card, CardContent } from "@/cache/components/ui/card";
+import { Input } from "@/cache/components/ui/input";
 
 // ============================================================================
 // MAIN PAGE COMPONENT
@@ -27,6 +28,7 @@ export default function InvestmentRequestsPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showMyLoansOnly, setShowMyLoansOnly] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const itemsPerPage = 9;
   const { isConnected, address: userAddress } = useAccount();
 
@@ -97,18 +99,33 @@ export default function InvestmentRequestsPage() {
   }, [loans]);
 
   const filteredLoans = useMemo(() => {
-    return loans
-      .filter((loan) => loan.status !== 5) // Oculta empréstimos cancelados
-      .filter((loan) => {
-        if (!showMyLoansOnly || !userAddress) return true;
-        const userAddr = userAddress.toLowerCase();
-        return (
-          loan.borrower.toLowerCase() === userAddr ||
-          loan.investor.toLowerCase() === userAddr
-        );
-      });
-  }, [loans, showMyLoansOnly, userAddress]);
+  return loans
+    .filter((loan) => loan.status !== 5) 
+    .filter((loan) => { 
+      if (!showMyLoansOnly || !userAddress) return true;
+      const userAddr = userAddress.toLowerCase();
+      return (
+        loan.borrower.toLowerCase() === userAddr ||
+        loan.investor.toLowerCase() === userAddr
+      );
+    })
+    .filter((loan) => { 
+      const term = searchTerm.trim();
+      if (!term) {
+        return true; 
+      }
+      const isNumericSearch = /^\d+$/.test(term);
 
+      if (isNumericSearch) {
+        
+        return String(loan.id) === term;
+      } else {
+        const borrowerAddress = loan.borrower || '';
+        return borrowerAddress.toLowerCase().includes(term.toLowerCase());
+      }
+    });
+}, [loans, showMyLoansOnly, userAddress, searchTerm]);
+  
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentLoans = filteredLoans.slice(indexOfFirstItem, indexOfLastItem);
@@ -123,7 +140,7 @@ export default function InvestmentRequestsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [showMyLoansOnly]);
+  }, [showMyLoansOnly, searchTerm]);
 
   const isLoading = isLoadingCount || isLoadingLoansData;
 
@@ -165,7 +182,17 @@ export default function InvestmentRequestsPage() {
         {isConnected && <StatsCards loans={loans} />}
         
         {isConnected && (
-          <div className="flex justify-end items-center mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div className="w-full md:w-4/5">
+              <Input
+                type="text"
+                placeholder="Search by ID or Borrower Address..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-card border-border"
+              />
+            </div>
+            
             <div className="flex items-center space-x-2">
               <Switch
                 id="my-loans-filter"
