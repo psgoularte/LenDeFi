@@ -164,7 +164,7 @@ export function RequestLoanDialog({
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={isPending || isConfirming}>
+              <Button type="submit" disabled={isPending || isConfirming} className="w-full">
                 {isPending
                   ? "Waiting for signature..."
                   : isConfirming

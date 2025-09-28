@@ -255,7 +255,7 @@ contract LoanMarket {
         L.collateralClaimed = true;
 
         uint gross = L.collateralAmount;
-        uint fee = (gross * 10) / 100;
+        uint fee = (gross * 5) / 100;
         uint net = gross - fee;
         (bool f, ) = feeWallet.call{value: fee}("");
         require(f, "Fee transfer failed");

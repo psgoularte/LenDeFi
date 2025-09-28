@@ -1,7 +1,7 @@
-require("@nomicfoundation/hardhat-ethers");
+import "@nomicfoundation/hardhat-toolbox";
 
-/** @type import{'hardhat.config'}.HardhatUserConfig */
-module.exports = {
+/** @type import("hardhat/config").HardhatUserConfig */
+const config = {
   solidity: {
     version: "0.8.19",
     settings: {
@@ -34,3 +34,5 @@ module.exports = {
     artifacts: "./artifacts",
   },
 };
+
+export default config;

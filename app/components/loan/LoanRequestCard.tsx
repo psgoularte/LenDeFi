@@ -321,6 +321,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">Interest Rate</span>
+              <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-pointer" /></TooltipTrigger><TooltipContent><p className="text-xs">10% fee on investors profit.</p></TooltipContent></Tooltip></TooltipProvider>
             </div>
             <div className="flex items-center gap-3">
               <p className="text-lg font-bold text-primary">
@@ -358,7 +359,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-green-600" />
               <span className="text-sm font-medium">Collateral</span>
-              <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-pointer" /></TooltipTrigger><TooltipContent><p className="text-xs">10% fee on claimed collateral in case of default.</p></TooltipContent></Tooltip></TooltipProvider>
+              <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-pointer" /></TooltipTrigger><TooltipContent><p className="text-xs">5% fee on claimed collateral in case of default.</p></TooltipContent></Tooltip></TooltipProvider>
             </div>
             <p className="text-xl font-bold">{formatUnits(request.collateralAmount, 18)} ETH</p>
           </div>
