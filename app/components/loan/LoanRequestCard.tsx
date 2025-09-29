@@ -22,6 +22,8 @@ import {
   ShieldCheck,
   Sparkles,
   Info,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { LoanMarketABI, LOAN_MARKET_ADDRESS } from "@/app/lib/contracts";
@@ -53,9 +55,44 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
 
+  const [isCopied, setIsCopied] = useState(false);
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysisResult | null>(null);
   const [aiError, setAiError] = useState("");
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(request.borrower);
+    setIsCopied(true);
+
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
+  };
+
+  const durationMonths = useMemo(() => {
+    return Number(request.durationSecs) / (60 * 60 * 24 * 30);
+  }, [request.durationSecs]);
+
+  const totalInterestRate = useMemo(() => {
+    return Number(request.interestBps) / 10000;
+  }, [request.interestBps]);
+
+  const monthlyInterestRate = useMemo(() => {
+    if (durationMonths <= 0) return 0;
+    return Math.pow(1 + totalInterestRate, 1 / durationMonths) - 1;
+  }, [totalInterestRate, durationMonths]);
+
+  const repaymentWithInterest = useMemo(() => {
+    const principal = Number(formatUnits(request.amountRequested, 18));
+    return principal * (1 + totalInterestRate);
+  }, [request.amountRequested, totalInterestRate]);
+
+  const formatNumber = (value: number) =>
+    value.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
 
   const isRepaymentDue = useMemo(() => {
     if (request.status !== 1 && request.status !== 2) return false;
@@ -239,9 +276,24 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <CardTitle className="text-lg font-semibold">Loan Request #{request.id}</CardTitle>
-            <p className="text-sm text-muted-foreground font-mono" title={request.borrower}>
-              {request.borrower.slice(0, 6)}...{request.borrower.slice(-4)}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground font-mono" title={request.borrower}>
+                {request.borrower.slice(0, 6)}...{request.borrower.slice(-4)}
+              </p>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCopy}
+                className="h-7 w-7"
+                aria-label="Copy borrower address"
+              >
+                {isCopied ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
             {(isBorrower || isInvestor) && (
               <Badge variant={isBorrower ? "default" : "default"} className="mt-2">
                 {isBorrower ? "Your Loan" : "You are the Investor"}
@@ -269,26 +321,47 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">Interest Rate</span>
-              <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-pointer" /></TooltipTrigger><TooltipContent><p className="text-xs">Platform charges a 10% fee on investor profits.</p></TooltipContent></Tooltip></TooltipProvider>
+              <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-pointer" /></TooltipTrigger><TooltipContent><p className="text-xs">10% fee on investors profit.</p></TooltipContent></Tooltip></TooltipProvider>
             </div>
-            <p className="text-lg font-bold text-primary">{Number(request.interestBps) / 100}%</p>
+            <div className="flex items-center gap-3">
+              <p className="text-lg font-bold text-primary">
+                {totalInterestRate * 100}%
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {formatNumber(monthlyInterestRate * 100)}% / mth
+              </p>
+            </div>
           </div>
         </div>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-foreground" />
-            <span className="text-sm font-medium">Loan Amount</span>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-foreground" />
+              <span className="text-sm font-medium">Loan Amount</span>
+            </div>
+            <p className="text-2xl font-bold">
+              {formatNumber(Number(formatUnits(request.amountRequested, 18)))} ETH
+            </p>
           </div>
-          <p className="text-2xl font-bold">{formatUnits(request.amountRequested, 18)} ETH</p>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-foreground" />
+              <span className="text-sm font-medium">Total Repayment</span>
+            </div>
+            <p className="text-2xl font-bold">
+              {formatNumber(repaymentWithInterest)} ETH
+            </p>
+          </div>
         </div>
         {request.collateralAmount > 0 && (
           <div className="space-y-2 pt-2">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-green-600" />
               <span className="text-sm font-medium">Collateral</span>
-              <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-pointer" /></TooltipTrigger><TooltipContent><p className="text-xs">10% fee on claimed collateral in case of default.</p></TooltipContent></Tooltip></TooltipProvider>
+              <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-pointer" /></TooltipTrigger><TooltipContent><p className="text-xs">5% fee on claimed collateral in case of default.</p></TooltipContent></Tooltip></TooltipProvider>
             </div>
-            <p className="text-xl font-bold">{formatUnits(request.collateralAmount, 18)} ETH</p>
+            <p className="text-xl font-bold">{formatNumber(Number(formatUnits(request.collateralAmount, 18)))} ETH</p>
           </div>
         )}
         <div className="pt-2 mt-auto">

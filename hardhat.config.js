@@ -1,7 +1,7 @@
-require("@nomicfoundation/hardhat-ethers");
+import "@nomicfoundation/hardhat-toolbox";
 
-/** @type import{'hardhat.config'}.HardhatUserConfig */
-module.exports = {
+/** @type import("hardhat/config").HardhatUserConfig */
+const config = {
   solidity: {
     version: "0.8.19",
     settings: {
@@ -15,10 +15,10 @@ module.exports = {
 
   networks: {
     sepolia: {
-      url: "https://sepolia.infura.io/v3/86e855d001ac4393a579b7b233080ad8", // ou Alchemy
+      url: "https://sepolia.infura.io/v3/86e855d001ac4393a579b7b233080ad8",
       accounts: [
         "6592baa77ec36152b7c45d24c526a92277c910f706e746ffacb37caffaab2341",
-      ], // ⚠️ sem 0x se for via dotenv
+      ],
     },
     hardhat: {
       chainId: 31337,
@@ -34,3 +34,5 @@ module.exports = {
     artifacts: "./artifacts",
   },
 };
+
+export default config;
