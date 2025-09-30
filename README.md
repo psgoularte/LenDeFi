@@ -23,7 +23,7 @@ pnpm install && pnpm dev
 bun install && bun dev
 ````
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the app.
+Open [https://lendefi.vercel.app/](https://lendefi.vercel.app/) with your browser to see the app.
 
 You can start editing by modifying:
 

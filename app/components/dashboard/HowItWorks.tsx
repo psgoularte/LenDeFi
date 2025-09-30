@@ -52,8 +52,8 @@ export function HowItWorks() {
             <h3 className="text-2xl font-semibold mb-4 text-center text-white">
               Watch Our Explainer Video
             </h3>
-            {/* Vídeo atualizado com o ID: HxP0IYfYbts */}
-            <YouTubeEmbed videoId="HxP0IYfYbts" />
+            {/* Vídeo atualizado com o ID: 56CiFbBU9Vg */}
+            <YouTubeEmbed videoId="56CiFbBU9Vg" />
           </div>
           {/* ----------------------------- */}
 
