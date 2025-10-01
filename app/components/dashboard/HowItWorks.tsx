@@ -46,18 +46,6 @@ export function HowItWorks() {
           <h2 className="text-3xl font-bold text-center mb-8 text-primary">
             How LenDeFi Works
           </h2>
-          
-        {/*
-           /*--- NOVO: CAIXA DE VÍDEO --- 
-          <div className="mt-8 mb-16 max-w-4xl mx-auto">
-            <h3 className="text-2xl font-semibold mb-4 text-center text-white">
-              Watch Our Explainer Video
-            </h3>
-            /* Vídeo atualizado com o ID: 56CiFbBU9Vg 
-            <YouTubeEmbed videoId="56CiFbBU9Vg" />
-          </div>
-           /*-----------------------------
-        */}
 
           <div className="space-y-12">
             {/* --- ETAPA 1: CRIAÇÃO --- */}
@@ -168,6 +156,16 @@ export function HowItWorks() {
                 </div>
               </div>
             </div>
+
+
+          <div className="mt-24 mb-24 max-w-4xl mx-auto">
+            <h3 className="text-2xl font-semibold mb-4 text-center text-white">
+              Watch Our Explainer Video
+            </h3>
+            {/* Vídeo atualizado com o ID: sDBiXUHufmc*/} 
+            <YouTubeEmbed videoId="sDBiXUHufmc" />
+          </div>
+
 
             <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="border-primary/20">
