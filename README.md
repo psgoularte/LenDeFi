@@ -8,30 +8,7 @@ This project is built with **Next.js** and Web3 integrations. It combines a mode
 
 ---
 
-## 🚀 Getting Started
-
-First, install dependencies and run the development server:
-
-```bash
-npm install
-npm run dev
-# or
-yarn install && yarn dev
-# or
-pnpm install && pnpm dev
-# or
-bun install && bun dev
-````
-
 Open [https://lendefi.vercel.app/](https://lendefi.vercel.app/) with your browser to see the app.
-
-You can start editing by modifying:
-
-```
-app/page.tsx
-```
-
-The page auto-updates as you edit.
 
 ---
 
@@ -78,21 +55,20 @@ The system follows a three-layer design:
    * Core loan logic lives on-chain: interest calculation, collateral management, liquidation in case of default.
    * Ensures immutability, transparency, and security.
 
-3. **Firestore (Firebase)**
+3. **Cache/Temporary Storage (Redis): Configured as a high-speed "cache layer" using Redis**
 
-   * Stores non-critical UI metadata (e.g., public loan history, cached stats).
-   * Provides authentication for identifying users (borrowers/investors).
+   * Goal: Stores recent AI analysis results and intermediate data (embeddings) to facilitate reuse and drastically reduce the cost and latency of reprocessing..
+   * Principle: Does not maintain definitive state; it functions as temporary memory to boost performance..
 
 ---
 
 ## 📊 Key Features
 
-* Borrowers can **create collateralized loan requests** directly from the app.
-* Investors can **fund loans** and earn yield without intermediaries.
-* **Reputation system** ensures trustworthy interactions.
-* **Oracles (simulated in MVP)** provide price feeds for liquidation logic.
-* **Real-time stats** about the market.
-* **PIX mock integration** demonstrates accessibility for Brazilian users.
+* Borrowers can create collateralized loan requests directly from the app.
+* Investors can fund loans and earn yield without intermediaries, assisted by AI-driven risk scores.
+* Instant Fiat Liquidity via PIX integration for smooth BRL deposits and withdrawals.
+* Decentralized Reputation System ensures trustworthy and fair interactions.
+* Automatic Liquidation logic is enforced by the Smart Contract to mitigate investor risk.
 
 ---
 
@@ -122,7 +98,7 @@ This project is licensed under the **MIT License** – free to use, modify, and 
 ---
 
 ## 👥 Authors
-* Mauricio Foletto de Freitas e Pedro Souza Goularte – desenvolvimento e concepção do projeto.
+* Mauricio Foletto de Freitas e Pedro Souza Goularte – Project Development and Design.
 
 ```
 
