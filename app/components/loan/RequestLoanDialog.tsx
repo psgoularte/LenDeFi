@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseEther } from "viem";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { LoanMarketABI, LOAN_MARKET_ADDRESS } from "@/app/lib/contracts";
 import { Button, type ButtonProps } from "@/cache/components/ui/button";
 import {
@@ -40,6 +41,8 @@ export function RequestLoanDialog({
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
+  
+  const { openConnectModal } = useConnectModal();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +87,15 @@ export function RequestLoanDialog({
     }
   }, [isSuccess, open]);
 
+
+  useEffect(() => {
+
+    if (open && !isConnected && openConnectModal) {
+      openConnectModal();
+    }
+  }, [open, isConnected, openConnectModal]);
+
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -103,91 +115,87 @@ export function RequestLoanDialog({
             increase trust.
           </DialogDescription>
         </DialogHeader>
-        {isConnected ? (
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="amount" className="text-right">
-                  Amount (ETH)
-                </Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  placeholder="e.g., 1.5"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="interest" className="text-right">
-                  Interest (%)
-                </Label>
-                <Input
-                  id="interest"
-                  type="number"
-                  placeholder="e.g., 5 for 5%"
-                  value={interestPercent}
-                  onChange={(e) => setInterestPercent(e.target.value)}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="duration" className="text-right">
-                  Duration (Days)
-                </Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  placeholder="e.g., 30"
-                  value={durationDays}
-                  onChange={(e) => setDurationDays(e.target.value)}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="collateral" className="text-right">
-                  Collateral (ETH)
-                </Label>
-                <Input
-                  id="collateral"
-                  type="number"
-                  placeholder="Optional, e.g., 0.1"
-                  value={collateral}
-                  onChange={(e) => setCollateral(e.target.value)}
-                  className="col-span-3"
-                />
-              </div>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="amount" className="text-right">
+                Amount (ETH)
+              </Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                placeholder="e.g., 1.5"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="col-span-3"
+                required
+              />
             </div>
-            <DialogFooter>
-              <Button type="submit" disabled={isPending || isConfirming} className="w-full">
-                {isPending
-                  ? "Waiting for signature..."
-                  : isConfirming
-                  ? "Confirming transaction..."
-                  : "Submit Request"}
-              </Button>
-            </DialogFooter>
-            {isSuccess && (
-              <p className="text-sm text-green-600 mt-2 text-center">
-                ✅ Loan request created successfully!
-              </p>
-            )}
-            {error && (
-              <p className="text-sm text-red-600 mt-2 text-center">
-                ❌ Error: {(error as { shortMessage?: string }).shortMessage || error.message}
-              </p>
-            )}
-          </form>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Please connect your wallet to request a loan.</p>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="interest" className="text-right">
+                Interest (%)
+              </Label>
+              <Input
+                id="interest"
+                type="number"
+                placeholder="e.g., 5 for 5%"
+                value={interestPercent}
+                onChange={(e) => setInterestPercent(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="duration" className="text-right">
+                Duration (Days)
+              </Label>
+              <Input
+                id="duration"
+                type="number"
+                placeholder="e.g., 30"
+                value={durationDays}
+                onChange={(e) => setDurationDays(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="collateral" className="text-right">
+                Collateral (ETH)
+              </Label>
+              <Input
+                id="collateral"
+                type="number"
+                placeholder="Optional, e.g., 0.1"
+                value={collateral}
+                onChange={(e) => setCollateral(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
           </div>
-        )}
+          <DialogFooter>
+            <Button type="submit" disabled={isPending || isConfirming || !isConnected} className="w-full">
+              {isPending
+                ? "Waiting for signature..."
+                : isConfirming
+                ? "Confirming transaction..."
+                : !isConnected
+                ? "Please connect wallet"
+                : "Submit Request"}
+            </Button>
+          </DialogFooter>
+          {isSuccess && (
+            <p className="text-sm text-green-600 mt-2 text-center">
+              ✅ Loan request created successfully!
+            </p>
+          )}
+          {error && (
+            <p className="text-sm text-red-600 mt-2 text-center">
+              ❌ Error: {(error as { shortMessage?: string }).shortMessage || error.message}
+            </p>
+          )}
+        </form>
       </DialogContent>
     </Dialog>
   );

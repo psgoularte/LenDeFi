@@ -26,6 +26,9 @@ import {
   Check,
 } from "lucide-react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+// IMPORTAÇÃO ADICIONAL: Importe o hook para abrir o modal da sua biblioteca de wallet connect.
+// Este é um exemplo para o RainbowKit. Adapte se usar outra biblioteca (ex: useWeb3Modal).
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { LoanMarketABI, LOAN_MARKET_ADDRESS } from "@/app/lib/contracts";
 import { formatUnits } from "viem";
 import type { Loan, AiAnalysisResult } from "@/app/lib/types";
@@ -46,17 +49,19 @@ interface LoanRequestCardProps {
 }
 
 export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProps) {
-  const { address: userAddress } = useAccount();
+  // ATUALIZAÇÃO 1: Obtenha 'isConnected' do useAccount
+  const { address: userAddress, isConnected } = useAccount();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
 
+  // ATUALIZAÇÃO 2: Inicialize o hook para abrir o modal de conexão
+  const { openConnectModal } = useConnectModal();
+
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-
   const [isCopied, setIsCopied] = useState(false);
-
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysisResult | null>(null);
   const [aiError, setAiError] = useState("");
@@ -64,7 +69,6 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
   const handleCopy = () => {
     navigator.clipboard.writeText(request.borrower);
     setIsCopied(true);
-
     setTimeout(() => {
       setIsCopied(false);
     }, 2000);
@@ -177,6 +181,16 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
   const handleWithdrawInvestorShare = (score: number) => { if (score < 1 || score > 5) return; writeContract({ abi: LoanMarketABI, address: LOAN_MARKET_ADDRESS, functionName: "withdrawInvestorShare", args: [BigInt(request.id), score] }); };
   const handleClaimCollateral = (score: number) => { if (score < 1 || score > 5) return; writeContract({ abi: LoanMarketABI, address: LOAN_MARKET_ADDRESS, functionName: "claimCollateral", args: [BigInt(request.id), score] }); };
 
+  const handleContractAction = (action: () => void) => {
+    if (!isConnected) {
+      // Se não estiver conectado, abre o modal da carteira
+      openConnectModal?.();
+    } else {
+      // Se estiver conectado, executa a ação do contrato
+      action();
+    }
+  };
+
   const isLoading = isPending || isConfirming;
   const isFundedAndExpired = useMemo(() => {
     if (request.status !== 1) return false;
@@ -185,23 +199,24 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
   }, [request.status, request.startTimestamp, request.durationSecs]);
 
   const renderActionButtons = () => {
+
     // Caso 1: O usuário é o TOMADOR do empréstimo
     if (isBorrower) {
       switch (request.status) {
         case 0: // Open
-          return <Button 
-           size="lg" 
-           variant="outline"
-           className="w-full bg-black text-red-500 border-red-500 hover:bg-red-500 hover:text-black" 
-           disabled={isLoading} 
-           onClick={handleCancel}
-         >
-           {isLoading ? "Cancelling..." : "Cancel Loan"}
-         </Button>;
+          return <Button
+            size="lg"
+            variant="outline"
+            className="w-full bg-black text-red-500 border-red-500 hover:bg-red-500 hover:text-black"
+            disabled={isLoading}
+            onClick={() => handleContractAction(handleCancel)}
+          >
+            {isLoading ? "Cancelling..." : "Cancel Loan"}
+          </Button>;
         case 1: // Funded
-          return <Button className="w-full" size="lg" disabled={isLoading || isRepaymentDue} onClick={handleWithdraw}>{isLoading ? "Withdrawing..." : isRepaymentDue ? "Withdrawal Period Expired" : "Withdraw Funds"}</Button>;
+          return <Button className="w-full" size="lg" disabled={isLoading || isRepaymentDue} onClick={() => handleContractAction(handleWithdraw)}>{isLoading ? "Withdrawing..." : isRepaymentDue ? "Withdrawal Period Expired" : "Withdraw Funds"}</Button>;
         case 2: // Active
-          return <Button className="w-full" size="lg" disabled={isLoading || isRepaymentDue} onClick={handleRepay}>{isLoading ? "Repaying..." : isRepaymentDue ? "Repayment Overdue" : `Repay ${formatUnits(repaymentAmount, 18)} ETH & Withdraw Collateral`}</Button>;
+          return <Button className="w-full" size="lg" disabled={isLoading || isRepaymentDue} onClick={() => handleContractAction(handleRepay)}>{isLoading ? "Repaying..." : isRepaymentDue ? "Repayment Overdue" : `Repay ${formatUnits(repaymentAmount, 18)} ETH & Withdraw Collateral`}</Button>;
         default:
           return <Button className="w-full" size="lg" disabled>{STATUS_MAP[request.status]}</Button>;
       }
@@ -211,7 +226,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
     if (isInvestor) {
       switch (request.status) {
         case 1: // Funded
-          if (isFundedAndExpired) return <Button className="w-full bg-black text-red-500 border-red-500 hover:bg-red-500 hover:text-black"  size="lg" variant="outline" disabled={isLoading} onClick={handleCancelFundedLoan}>{isLoading ? "Cancelling..." : "Cancel & Reclaim Funds"}</Button>;
+          if (isFundedAndExpired) return <Button className="w-full bg-black text-red-500 border-red-500 hover:bg-red-500 hover:text-black" size="lg" variant="outline" disabled={isLoading} onClick={() => handleContractAction(handleCancelFundedLoan)}>{isLoading ? "Cancelling..." : "Cancel & Reclaim Funds"}</Button>;
           break;
         case 2: // Active
         case 4: // Defaulted
@@ -220,7 +235,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
               <div className="space-y-3 text-center">
                 <p className="text-sm font-medium text-destructive">Repayment overdue. Claim collateral.</p>
                 <div className="flex items-center justify-center gap-1">{[1, 2, 3, 4, 5].map((star) => <Star key={star} className={`h-6 w-6 cursor-pointer transition-colors ${(hoverRating || rating) >= star ? "fill-accent text-accent" : "text-muted-foreground"}`} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} onClick={() => setRating(star)} />)}</div>
-                <Button className="w-full bg-black text-red-500 border-red-500 hover:bg-red-500 hover:text-black"  size="lg" variant="outline" disabled={isLoading || rating === 0} onClick={() => handleClaimCollateral(rating)}>{isLoading ? "Claiming..." : "Claim Collateral & Score"}</Button>
+                <Button className="w-full bg-black text-red-500 border-red-500 hover:bg-red-500 hover:text-black" size="lg" variant="outline" disabled={isLoading || rating === 0} onClick={() => handleContractAction(() => handleClaimCollateral(rating))}>{isLoading ? "Claiming..." : "Claim Collateral & Score"}</Button>
               </div>
             );
           }
@@ -231,7 +246,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
               <div className="space-y-3 text-center">
                 <p className="text-sm font-medium">Leave feedback to withdraw your funds.</p>
                 <div className="flex items-center justify-center gap-1">{[1, 2, 3, 4, 5].map((star) => <Star key={star} className={`h-6 w-6 cursor-pointer transition-colors ${(hoverRating || rating) >= star ? "fill-accent text-accent" : "text-muted-foreground"}`} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} onClick={() => setRating(star)} />)}</div>
-                <Button className="w-full" size="lg" disabled={isLoading || rating === 0} onClick={() => handleWithdrawInvestorShare(rating)}>{isLoading ? "Withdrawing..." : `Withdraw ${formatUnits(withdrawableAmount, 18)} ETH & Score`}</Button>
+                <Button className="w-full" size="lg" disabled={isLoading || rating === 0} onClick={() => handleContractAction(() => handleWithdrawInvestorShare(rating))}>{isLoading ? "Withdrawing..." : `Withdraw ${formatUnits(withdrawableAmount, 18)} ETH & Score`}</Button>
               </div>
             );
           }
@@ -257,7 +272,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
             )}
           </div>
         )}
-        <Button className="w-full" size="lg" disabled={!isLoanOpenForInvestment || isLoading || isProposalExpired} onClick={handleInvest}>
+        <Button className="w-full" size="lg" disabled={!isLoanOpenForInvestment || isLoading || isProposalExpired} onClick={() => handleContractAction(handleInvest)}>
           {isLoading ? "..." : isProposalExpired ? "Proposal Expired" : isLoanOpenForInvestment ? "Invest Now" : STATUS_MAP[request.status]}
         </Button>
       </div>

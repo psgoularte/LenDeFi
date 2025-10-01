@@ -14,7 +14,7 @@ import { HowItWorks } from "@/app/components/dashboard/HowItWorks";
 import { LoanRequestCard } from "@/app/components/loan/LoanRequestCard";
 import { RequestLoanDialog } from "@/app/components/loan/RequestLoanDialog";
 
-// Importando componentes de UI restantes
+// Importando componentes de UI
 import { Button } from "@/cache/components/ui/button";
 import { Switch } from "@/cache/components/ui/switch";
 import { Label } from "@/cache/components/ui/label";
@@ -36,7 +36,6 @@ export default function InvestmentRequestsPage() {
     abi: LoanMarketABI,
     address: LOAN_MARKET_ADDRESS,
     functionName: "getLoanCount",
-    query: { enabled: isConnected },
   });
 
   const loanContracts = useMemo(() => {
@@ -52,7 +51,7 @@ export default function InvestmentRequestsPage() {
 
   const { data: loansData, isLoading: isLoadingLoansData } = useReadContracts({
     contracts: loanContracts,
-    query: { enabled: isConnected && loanContracts.length > 0 },
+    query: { enabled: loanContracts.length > 0 },
   });
 
   useEffect(() => {
@@ -124,7 +123,7 @@ export default function InvestmentRequestsPage() {
         return borrowerAddress.toLowerCase().includes(term.toLowerCase());
       }
     });
-}, [loans, showMyLoansOnly, userAddress, searchTerm]);
+  }, [loans, showMyLoansOnly, userAddress, searchTerm]);
   
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -143,15 +142,6 @@ export default function InvestmentRequestsPage() {
   }, [showMyLoansOnly, searchTerm]);
 
   const isLoading = isLoadingCount || isLoadingLoansData;
-
-  const NotConnectedView = () => (
-    <div className="col-span-full text-center py-16">
-      <h3 className="text-2xl font-semibold mb-2">Welcome to LenDeFi</h3>
-      <p className="text-muted-foreground">
-        Please connect your wallet to view and interact with loan requests.
-      </p>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -179,20 +169,21 @@ export default function InvestmentRequestsPage() {
       </section>
 
       <main className="container mx-auto px-4 py-8">
-        {isConnected && <StatsCards loans={loans} />}
+        <StatsCards loans={loans} />
         
-        {isConnected && (
-          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <div className="w-full md:w-4/5">
-              <Input
-                type="text"
-                placeholder="Search by ID or Borrower Address..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-card border-border"
-              />
-            </div>
-            
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <div className="w-full md:w-4/5">
+            <Input
+              type="text"
+              placeholder="Search by ID or Borrower Address..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-card border-border"
+            />
+          </div>
+          
+          {/* O switch "Show My Loans Only" só é renderizado se a carteira estiver conectada */}
+          {isConnected && (
             <div className="flex items-center space-x-2">
               <Switch
                 id="my-loans-filter"
@@ -201,13 +192,11 @@ export default function InvestmentRequestsPage() {
               />
               <Label htmlFor="my-loans-filter">Show My Loans Only</Label>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {!isConnected ? (
-            <NotConnectedView />
-          ) : isLoading ? (
+          {isLoading ? (
             <p className="col-span-full text-center text-muted-foreground">
               Loading loans...
             </p>
@@ -230,7 +219,7 @@ export default function InvestmentRequestsPage() {
           )}
         </div>
 
-        {totalPages > 1 && isConnected && (
+        {totalPages > 1 && (
           <div className="mt-8 flex justify-center items-center gap-4">
             <Button
               onClick={handlePrevPage}
