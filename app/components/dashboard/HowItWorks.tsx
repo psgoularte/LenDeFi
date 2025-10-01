@@ -47,16 +47,17 @@ export function HowItWorks() {
             How LenDeFi Works
           </h2>
           
-          {/* --- NOVO: CAIXA DE VÍDEO --- */}
+        {/*
+           /*--- NOVO: CAIXA DE VÍDEO --- 
           <div className="mt-8 mb-16 max-w-4xl mx-auto">
             <h3 className="text-2xl font-semibold mb-4 text-center text-white">
               Watch Our Explainer Video
             </h3>
-            {/* Vídeo atualizado com o ID: 56CiFbBU9Vg */}
+            /* Vídeo atualizado com o ID: 56CiFbBU9Vg 
             <YouTubeEmbed videoId="56CiFbBU9Vg" />
           </div>
-          {/* ----------------------------- */}
-
+           /*-----------------------------
+        */}
 
           <div className="space-y-12">
             {/* --- ETAPA 1: CRIAÇÃO --- */}
