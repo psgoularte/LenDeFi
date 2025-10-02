@@ -98,6 +98,10 @@
   ); /* Brighter orange sidebar focus rings */
 }
 
+.font-rainbowkit {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

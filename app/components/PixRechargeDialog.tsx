@@ -15,7 +15,7 @@ import {
 } from "@/cache/components/ui/dialog";
 import { Input } from "@/cache/components/ui/input";
 import { Label } from "@/cache/components/ui/label";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ExternalLink } from "lucide-react";
 import { QRCodeSVG } from 'qrcode.react';
 
 const FAKE_PIX_KEY = "00020126580014br.gov.bcb.pix0136a6f4-8a53-435a-9d2a-43f65b3d2b215204000053039865802BR5913John Doe6009Sao Paulo62070503***6304E7C1";
@@ -25,11 +25,13 @@ export function PixRechargeDialog() {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [cpf, setCpf] = useState("");
+  const [phone, setPhone] = useState("");
   const [amountEth, setAmountEth] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
+  const [transactionHash, setTransactionHash] = useState<string | null>(null);
 
   const { address: userAddress, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -44,10 +46,12 @@ export function PixRechargeDialog() {
     setStep(1);
     setName("");
     setCpf("");
+    setPhone("");
     setAmountEth("");
     setFeedbackMessage("");
     setIsSubmitting(false);
     setIsError(false);
+    setTransactionHash(null);
   };
   
   const handleOpenChange = (isOpen: boolean) => {
@@ -63,7 +67,7 @@ export function PixRechargeDialog() {
 
   const handleProceedToPayment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name && cpf && amountEth) {
+    if (name && cpf && phone && amountEth) {
       setStep(2);
     }
   };
@@ -73,28 +77,30 @@ export function PixRechargeDialog() {
     setFeedbackMessage("");
     setIsError(false);
     try {
-      const apiURL = `${process.env.NEXT_PUBLIC_API_URL}/api/pix-mock`;
-      const response = await fetch(apiURL, {
+      const response = await fetch('/api/pix-mock/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nome: name,
-          cpf: cpf, 
+          cpf: cpf,
+          telefone: phone,
           enderecoEthereum: userAddress,
           valorEth: amountEth,
         }),
       });
+
       const data = await response.json();
+
       if (!response.ok) {
         throw new Error(data.error || "Failed to communicate with the server.");
       }
-      setFeedbackMessage(`✅ Request received! ETH will be sent to your wallet shortly. ID: ${data.transactionId}`);
-      setTimeout(() => {
-        handleOpenChange(false);
-      }, 5000);
+
+      setTransactionHash(data.transactionHash);
+      setStep(3);
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
-      setFeedbackMessage(`❌ Error: ${errorMessage}`);
+      setFeedbackMessage(`Error: ${errorMessage}`);
       setIsError(true);
     } finally {
       setIsSubmitting(false);
@@ -116,18 +122,22 @@ export function PixRechargeDialog() {
         {step === 1 && (
           <>
             <DialogHeader>
-              <DialogTitle>PIX Recharge</DialogTitle>
+              <DialogTitle>Recharge with PIX</DialogTitle>
               <DialogDescription>Enter your details and the amount you wish to recharge.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleProceedToPayment}>
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="pix-name">Name</Label>
+                  <Label htmlFor="pix-name">Full Name</Label>
                   <Input id="pix-name" placeholder="Your full name" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pix-cpf">CPF</Label>
                   <Input id="pix-cpf" type="text" placeholder="000.000.000-00" value={cpf} onChange={(e) => setCpf(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pix-phone">Phone Number</Label>
+                  <Input id="pix-phone" type="tel" placeholder="(11) 91234-5678" value={phone} onChange={(e) => setPhone(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pix-amount">Amount (ETH)</Label>
@@ -153,7 +163,7 @@ export function PixRechargeDialog() {
             </DialogHeader>
             <div className="py-6 flex flex-col items-center gap-4">
                 <div className="p-4 bg-white rounded-lg">
-                  <QRCodeSVG value={FAKE_PIX_KEY} size={192} bgColor={"#ffffff"} fgColor={"#000000"} level={"L"} includeMargin={false}/>
+                  <QRCodeSVG value={FAKE_PIX_KEY} size={192} />
                 </div>
                 <div className="w-full mt-6">
                     <Label htmlFor="pix-key">PIX Copy & Paste Key</Label>
@@ -167,10 +177,38 @@ export function PixRechargeDialog() {
             </div>
             <DialogFooter>
               <Button onClick={handleConfirmPayment} disabled={isSubmitting} className="w-full">
-                {isSubmitting ? "Processing..." : "Confirm Payment"}
+                {isSubmitting ? "Processing..." : "I've Paid, Confirm Recharge"}
               </Button>
             </DialogFooter>
-            {feedbackMessage && <p className={`text-sm mt-3 text-center ${isError ? 'text-red-600' : 'text-green-600'}`}>{feedbackMessage}</p>}
+            {feedbackMessage && isError && <p className="text-sm mt-3 text-center text-red-600">{feedbackMessage}</p>}
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-green-500">Transaction Submitted!</DialogTitle>
+              <DialogDescription>
+                Your recharge has been submitted to the Sepolia network. Confirmation may take a few moments.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="my-4 space-y-2">
+              <p className="text-sm text-muted-foreground">You can track the status of your transaction on the block explorer.</p>
+              <Button 
+                variant="outline" 
+                className="w-full justify-center gap-2"
+                asChild
+              >
+                <a href={`https://sepolia.etherscan.io/tx/${transactionHash}`} target="_blank" rel="noopener noreferrer">
+                  View on Etherscan <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => handleOpenChange(false)} className="w-full">
+                Close
+              </Button>
+            </DialogFooter>
           </>
         )}
       </DialogContent>

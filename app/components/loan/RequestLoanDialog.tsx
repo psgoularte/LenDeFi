@@ -187,12 +187,12 @@ export function RequestLoanDialog({
           </DialogFooter>
           {isSuccess && (
             <p className="text-sm text-green-600 mt-2 text-center">
-              ✅ Loan request created successfully!
+              Loan request created successfully!
             </p>
           )}
           {error && (
             <p className="text-sm text-red-600 mt-2 text-center">
-              ❌ Error: {(error as { shortMessage?: string }).shortMessage || error.message}
+              Error: {(error as { shortMessage?: string }).shortMessage || error.message}
             </p>
           )}
         </form>

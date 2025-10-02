@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { RequestLoanDialog } from "../loan/RequestLoanDialog";
 import { PixRechargeDialog } from "../PixRechargeDialog";
+import { CustomConnectButton } from '../CustomConnectButton';
 
 export function Header() {
   return (

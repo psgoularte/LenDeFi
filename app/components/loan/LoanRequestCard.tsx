@@ -216,7 +216,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
         case 1: // Funded
           return <Button className="w-full" size="lg" disabled={isLoading || isRepaymentDue} onClick={() => handleContractAction(handleWithdraw)}>{isLoading ? "Withdrawing..." : isRepaymentDue ? "Withdrawal Period Expired" : "Withdraw Funds"}</Button>;
         case 2: // Active
-          return <Button className="w-full" size="lg" disabled={isLoading || isRepaymentDue} onClick={() => handleContractAction(handleRepay)}>{isLoading ? "Repaying..." : isRepaymentDue ? "Repayment Overdue" : `Repay ${formatUnits(repaymentAmount, 18)} ETH & Withdraw Collateral`}</Button>;
+          return <Button className="w-full" size="lg" disabled={isLoading || isRepaymentDue} onClick={() => handleContractAction(handleRepay)}>{isLoading ? "Repaying..." : isRepaymentDue ? "Repayment Overdue" : `Repay & Withdraw Collateral`}</Button>;
         default:
           return <Button className="w-full" size="lg" disabled>{STATUS_MAP[request.status]}</Button>;
       }
@@ -273,7 +273,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
           </div>
         )}
         <Button className="w-full" size="lg" disabled={!isLoanOpenForInvestment || isLoading || isProposalExpired} onClick={() => handleContractAction(handleInvest)}>
-          {isLoading ? "..." : isProposalExpired ? "Proposal Expired" : isLoanOpenForInvestment ? "Invest Now" : STATUS_MAP[request.status]}
+          {isLoading ? "Signing..." : isProposalExpired ? "Proposal Expired" : isLoanOpenForInvestment ? "Invest Now" : STATUS_MAP[request.status]}
         </Button>
       </div>
     );
@@ -381,8 +381,8 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
         )}
         <div className="pt-2 mt-auto">
           {renderActionButtons()}
-          {isSuccess && <p className="text-sm text-center mt-2 text-green-600">✅ Transaction Confirmed!</p>}
-          {error && <p className="text-sm text-center mt-2 text-red-600">❌ {(error as { shortMessage?: string }).shortMessage || error.message}</p>}
+          {isSuccess && <p className="text-sm text-center mt-2 text-green-600">Transaction Confirmed!</p>}
+          {error && <p className="text-sm text-center mt-2 text-red-600">{(error as { shortMessage?: string }).shortMessage || error.message}</p>}
         </div>
       </CardContent>
     </Card>

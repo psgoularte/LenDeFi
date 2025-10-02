@@ -21,9 +21,7 @@ import { Label } from "@/cache/components/ui/label";
 import { Card, CardContent } from "@/cache/components/ui/card";
 import { Input } from "@/cache/components/ui/input";
 
-// ============================================================================
-// MAIN PAGE COMPONENT
-// ============================================================================
+
 export default function InvestmentRequestsPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
