@@ -1,21 +1,18 @@
 import { NextResponse } from 'next/server';
-import { createPublicClient, createWalletClient, http, isAddress, parseEther } from 'viem';
+import { createWalletClient, http, isAddress, parseEther, BaseError } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
-
 
 const SEPOLIA_RPC = process.env.SEPOLIA_URL;
 const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}`;
 
 if (!SEPOLIA_RPC || !PRIVATE_KEY) {
-  console.error("ERRO CRÍTICO: As variáveis de ambiente SEPOLIA_URL e PRIVATE_KEY devem estar definidas.");
-  throw new Error("Configuração do servidor incompleta: Faltam variáveis de ambiente.");
+  console.error("CRITICAL ERROR: Environment variables SEPOLIA_URL and PRIVATE_KEY must be defined.");
+  throw new Error("Server configuration incomplete: Missing environment variables.");
 }
 
 const account = privateKeyToAccount(PRIVATE_KEY);
 const walletClient = createWalletClient({ account, chain: sepolia, transport: http(SEPOLIA_RPC) });
-
-
 
 export async function POST(request: Request) {
   try {
@@ -23,48 +20,54 @@ export async function POST(request: Request) {
     const { nome, cpf, telefone, enderecoEthereum, valorEth } = body;
     
     if (!nome || !cpf || !telefone || !enderecoEthereum || !valorEth) {
-      return NextResponse.json({ error: "Todos os campos são obrigatórios" }, { status: 400 });
+      return NextResponse.json({ error: "All fields are mandatory" }, { status: 400 });
     }
     if (!isAddress(enderecoEthereum)) {
-      return NextResponse.json({ error: "Endereço Ethereum inválido" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid Ethereum address" }, { status: 400 });
     }
 
     const transactionId = `PIX-${Date.now()}`;
-    console.log(`[${transactionId}] A processar pagamento para ${nome} (CPF: ${cpf})...`);
+    console.log(`[${transactionId}] Processing payment for ${nome} (CPF: ${cpf})...`);
 
-    // TENTA ENVIAR A TRANSAÇÃO (A PARTE RÁPIDA)
     try {
       const valueInWei = parseEther(valorEth);
-      console.log(`[${transactionId}] A enviar ${valorEth} ETH para ${enderecoEthereum}...`);
+      console.log(`[${transactionId}] Sending ${valorEth} ETH to ${enderecoEthereum}...`);
       
-      // **MUDANÇA PRINCIPAL AQUI**
-      // 1. Usamos 'await' para esperar o envio e obter o hash.
       const txHash = await walletClient.sendTransaction({
         to: enderecoEthereum,
         value: valueInWei,
       });
 
-      // 2. REMOVEMOS a espera pela confirmação (a parte lenta).
-      // await publicClient.waitForTransactionReceipt({ hash: txHash });
-
-      console.log(`[${transactionId}] SUCESSO! Transação enviada com hash: ${txHash}`);
+      console.log(`[${transactionId}] SUCCESS! Transaction sent with hash: ${txHash}`);
       
-      // 3. Retornamos o sucesso com o hash da transação.
       return NextResponse.json({
-        message: "Transação enviada com sucesso! A confirmação pode levar alguns instantes na rede.",
+        message: "Transaction sent successfully! Confirmation may take a few moments on the network.",
         status: "SUBMITTED",
         transactionId: transactionId,
-        transactionHash: txHash, // Devolve o hash para o frontend!
-      }, { status: 200 }); // 200 OK
+        transactionHash: txHash,
+      }, { status: 200 });
 
-    } catch (err: any) {
-      const errorMessage = err.shortMessage || err.message || "Erro desconhecido.";
-      console.error(`[${transactionId}] FALHA ao enviar ETH:`, errorMessage);
-      return NextResponse.json({ error: `Falha ao enviar transação: ${errorMessage}` }, { status: 500 });
+    } catch (err: unknown) {
+      let errorMessage = "An unknown error occurred while sending the transaction.";
+      
+      if (err instanceof BaseError) {
+        errorMessage = err.shortMessage;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      console.error(`[${transactionId}] FAILED to send ETH:`, errorMessage);
+      return NextResponse.json({ error: `Failed to send transaction: ${errorMessage}` }, { status: 500 });
     }
 
-  } catch (error: any) {
-    console.error("Erro no handler POST da API de pagamento:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    let errorMessage = "Failed to process the request.";
+
+    if (error instanceof Error) {
+        errorMessage = error.message;
+    }
+    
+    console.error("Error in the payment API POST handler:", errorMessage);
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
