@@ -240,9 +240,6 @@ contract LoanMarket {
         return (sum * 100) / count;
     }
 
-    // ##### FUNÇÃO REMOVIDA #####
-    // A função withdrawCollateral foi removida por ser redundante agora.
-
     function claimCollateral(uint loanId, uint8 score) external nonReentrant {
         checkDefault(loanId); 
         
