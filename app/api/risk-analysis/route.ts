@@ -11,7 +11,7 @@ type AiAnalysisResult = {
 const githubToken = process.env.GITHUB_TOKEN;
 const infuraUrl = process.env.SEPOLIA_URL;
 
-const model = "deepseek/DeepSeek-V3-0324";
+const model = "gpt-4o-mini";
 const githubEndpoint = "https://models.github.ai/inference";
 
 const redis = new Redis({
