@@ -60,7 +60,7 @@ export default function InvestmentRequestsPage() {
           bigint, `0x${string}`, number, bigint, bigint, boolean
         ];
         return {
-          id: i,
+          id: BigInt(i),
           borrower: decoded[0],
           amountRequested: decoded[1],
           amountFunded: decoded[2],

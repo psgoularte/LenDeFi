@@ -4,7 +4,7 @@ export type AiAnalysisResult = {
 };
 
 export type Loan = {
-  id: number;
+  id: bigint;
   borrower: `0x${string}`;
   amountRequested: bigint;
   amountFunded: bigint;

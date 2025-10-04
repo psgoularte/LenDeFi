@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { Redis } from '@upstash/redis';
 
-if (!process.env.RESEND_API_KEY || !process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-  console.error("CRITICAL ERROR: Missing Resend or Redis environment variables.");
+if (!process.env.GMAIL_EMAIL || !process.env.GMAIL_APP_PASSWORD || !process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+  console.error("CRITICAL ERROR: Missing Gmail or Redis environment variables.");
   throw new Error("Server configuration incomplete.");
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -21,6 +20,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_EMAIL,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    });
+
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const tenMinutesInSeconds = 10 * 60;
     const redisKey = `email-code:${email}`;
@@ -28,14 +35,17 @@ export async function POST(request: Request) {
     await redis.set(redisKey, code, { ex: tenMinutesInSeconds });
     console.log(`[Email] Storing code ${code} for key: ${redisKey}`);
 
-    await resend.emails.send({
-      from: 'Verification <onboarding@resend.dev>', 
+    const mailOptions = {
+      from: `"LenDeFi" <${process.env.GMAIL_EMAIL}>`, 
       to: email,
       subject: 'Your Verification Code',
-      html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code will expire in 10 minutes.</p>`,
-    });
+      html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code will expire in 10 minutes.</p>`, 
+    };
 
-    console.log(`[Email] Code sent successfully to ${email}`);
+
+    await transporter.sendMail(mailOptions);
+
+    console.log(`[Email] Code sent successfully to ${email} via Nodemailer/Gmail.`);
     return NextResponse.json({ message: "Verification code sent." }, { status: 200 });
 
   } catch (error: unknown) {

@@ -32,6 +32,6 @@ export async function GET() {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
     console.error("[ETH Price] Error fetching ETH price:", errorMessage);
     
-    return NextResponse.json({ error: `Failed to get ETH price: ${errorMessage}` }, { status: 502 }); // 502 Bad Gateway é apropriado aqui
+    return NextResponse.json({ error: `Failed to get ETH price: ${errorMessage}` }, { status: 502 });
   }
 }
