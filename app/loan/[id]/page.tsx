@@ -93,7 +93,7 @@ function useBorrowerHistory(borrowerAddress?: Address) {
 
     const borrowerLoans = allLoansData
       .map((result) => (result.status === "success" ? (result.result as unknown as RawLoanData) : null))
-      
+
       .filter((loanData): loanData is RawLoanData => loanData !== null && loanData[0]?.toLowerCase() === borrowerAddress.toLowerCase())
 
     if (borrowerLoans.length === 0)
@@ -394,7 +394,7 @@ export default function LoanDetailPage() {
       collateralClaimed,
     ] = loanData as RawLoanData
     return {
-      id: loanId,
+      id: BigInt(loanId),
       borrower,
       amountRequested,
       amountFunded,
