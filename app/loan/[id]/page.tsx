@@ -267,7 +267,7 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
                 <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                 <Tooltip
-                  cursor={{ fill: "hsla(var(--primary), 0.1)" }}
+                  cursor={{ fill: "transparent" }}
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
