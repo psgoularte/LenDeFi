@@ -35,6 +35,26 @@ import Link from "next/link"
 import { useConnectModal } from "@rainbow-me/rainbowkit"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 
+// --- TIPOS ADICIONADOS PARA CORREÇÃO ---
+type RawLoanData = readonly [
+  Address, bigint, bigint, bigint, bigint, bigint, number, bigint, bigint, Address, number, bigint, bigint, boolean
+];
+
+type BorrowerHistory = {
+  totalLoans: number;
+  repaid: number;
+  defaulted: number;
+  totalValue: number;
+  repaymentRate: number;
+  scoreDistribution: { name: string; count: number }[];
+} | null;
+
+type ContractError = {
+  shortMessage?: string;
+  message: string;
+};
+
+// --- CONSTANTES ---
 const STATUS_MAP = ["Open", "Funded", "Active", "Repaid", "Defaulted", "Cancelled"]
 const STATUS_COLORS = {
   0: "bg-green-500/10 text-green-500 border-green-500/20",
@@ -68,12 +88,13 @@ function useBorrowerHistory(borrowerAddress?: Address) {
     query: { enabled: loanCount !== undefined && loanCount > 0 },
   })
 
-  const history = useMemo(() => {
+  const history: BorrowerHistory = useMemo(() => {
     if (!allLoansData || !borrowerAddress) return null
 
     const borrowerLoans = allLoansData
-      .map((result) => (result.status === "success" ? (result.result as any) : null))
-      .filter((loanData) => loanData && loanData[0]?.toLowerCase() === borrowerAddress.toLowerCase())
+      .map((result) => (result.status === "success" ? (result.result as unknown as RawLoanData) : null))
+      
+      .filter((loanData): loanData is RawLoanData => loanData !== null && loanData[0]?.toLowerCase() === borrowerAddress.toLowerCase())
 
     if (borrowerLoans.length === 0)
       return { totalLoans: 0, repaid: 0, defaulted: 0, totalValue: 0, repaymentRate: 0, scoreDistribution: [] }
@@ -192,7 +213,6 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
         <CardDescription>Track record and performance metrics</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 relative">
-        {/* ✅ VOLTANDO PARA OS 4 PARÂMETROS ANTIGOS NA GRADE PRINCIPAL */}
         <div className="grid grid-cols-2 gap-3">
           <DetailItem icon={<Hash size={16} />} label="Total Loans" value={history.totalLoans} />
           <DetailItem
@@ -225,7 +245,6 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
           />
         </div>
         
-        {/* ✅ ADICIONANDO REPAID E DEFAULTED ABAIXO, SEM COR */}
         <div className="flex justify-around text-center pt-4 border-t border-border/50">
             <div>
                 <p className="text-sm text-muted-foreground">Repaid</p>
@@ -254,8 +273,7 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
                     border: "1px solid hsl(var(--border))",
                   }}
                 />
-                {/* ✅ COR ADICIONADA ÀS BARRAS */}
-                <Bar dataKey="count" fill="#ff7300" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -265,7 +283,7 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
   )
 }
 
-function AiAnalysisCard({ loan, history }: { loan: Loan; history: any }) {
+function AiAnalysisCard({ loan, history }: { loan: Loan; history: BorrowerHistory }) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [aiAnalysis, setAiAnalysis] = useState<AiAnalysisResult | null>(null);
     const [aiError, setAiError] = useState("");
@@ -374,7 +392,7 @@ export default function LoanDetailPage() {
       defaultTimestamp,
       collateralAmount,
       collateralClaimed,
-    ] = loanData as any
+    ] = loanData as RawLoanData
     return {
       id: loanId,
       borrower,
@@ -708,13 +726,13 @@ export default function LoanDetailPage() {
                 <DetailItem
                   icon={<DollarSign size={18} />}
                   label="Amount"
-                  value={`${formatUnits(loan.amountRequested, 18)} ETH`}
+                  value={`${parseFloat(formatUnits(loan.amountRequested, 18)).toString()} ETH`}
                 />
                 <DetailItem
                   icon={<TrendingUp size={18} />}
                   label="Interest"
                   value={`${(totalInterestRate * 100).toFixed(2)}%`}
-                  valueClass="text-white"
+                  valueClass="text-primary"
                 />
                 <DetailItem
                   icon={<Clock size={18} />}
@@ -724,7 +742,7 @@ export default function LoanDetailPage() {
                 <DetailItem
                   icon={<ShieldCheck size={18} />}
                   label="Collateral"
-                  value={loan.collateralAmount > 0 ? `${formatUnits(loan.collateralAmount, 18)} ETH` : "None"}
+                  value={loan.collateralAmount > 0 ? `${parseFloat(formatUnits(loan.collateralAmount, 18)).toString()} ETH` : "None"}
                   valueClass={loan.collateralAmount > 0 ? "text-foreground" : "text-muted-foreground"}
                 />
                 <DetailItem
@@ -761,7 +779,7 @@ export default function LoanDetailPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm pt-2 border-t border-border/50">
                     <span className="text-muted-foreground">
-                      {formatUnits(loan.totalRepayment, 18)} / {parseFloat(repaymentWithInterest.toFixed(6))} ETH
+                      {parseFloat(formatUnits(loan.totalRepayment, 18)).toString()} / {parseFloat(repaymentWithInterest.toFixed(6))} ETH
                     </span>
                     {loan.status === 2 && (
                       <span className="text-muted-foreground">
@@ -810,7 +828,7 @@ export default function LoanDetailPage() {
                   )}
                   {isSuccess && <p className="text-sm text-green-500 font-medium">✓ Transaction Confirmed!</p>}
                   {error && (
-                    <p className="text-sm text-destructive">{(error as any).shortMessage || "Transaction failed."}</p>
+                    <p className="text-sm text-destructive">{(error as ContractError).shortMessage || "Transaction failed."}</p>
                   )}
                 </div>
               </CardContent>
