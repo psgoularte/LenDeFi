@@ -11,8 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/cac
 import { Button } from "@/cache/components/ui/button"
 import { Badge } from "@/cache/components/ui/badge"
 import { Skeleton } from "@/cache/components/ui/skeleton"
-import { Alert, AlertDescription, AlertTitle } from "@/cache/components/ui/alert"
-import { Progress } from "@/cache/components/ui/progress"
 import {
   DollarSign,
   TrendingUp,
@@ -21,7 +19,6 @@ import {
   Star,
   User,
   Activity,
-  AlertCircle,
   Hash,
   BadgePercent,
   History,
@@ -93,7 +90,6 @@ function useBorrowerHistory(borrowerAddress?: Address) {
 
     const borrowerLoans = allLoansData
       .map((result) => (result.status === "success" ? (result.result as unknown as RawLoanData) : null))
-
       .filter((loanData): loanData is RawLoanData => loanData !== null && loanData[0]?.toLowerCase() === borrowerAddress.toLowerCase())
 
     if (borrowerLoans.length === 0)
@@ -142,7 +138,15 @@ function useBorrowerHistory(borrowerAddress?: Address) {
   })
   const averageScore = averageScoreData ? Number(averageScoreData) / 100 : 0
 
-  return { history, averageScore, isLoading: isLoadingCount || isLoadingLoans }
+  const { data: tierData } = useReadContract({
+    abi: LoanMarketABI,
+    address: LOAN_MARKET_ADDRESS,
+    functionName: "getBorrowerTier",
+    args: [borrowerAddress!],
+    query: { enabled: !!borrowerAddress },
+  })
+
+  return { history, averageScore, tierData, isLoading: isLoadingCount || isLoadingLoans }
 }
 
 function DetailItem({
@@ -162,6 +166,7 @@ function DetailItem({
   )
 }
 
+// MODIFICADO: Card de histórico ajustado
 function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) {
   const { history, averageScore, isLoading } = useBorrowerHistory(borrowerAddress)
 
@@ -201,6 +206,8 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
       </Card>
     )
   }
+  
+  const hasFinishedLoans = history.repaid > 0 || history.defaulted > 0;
 
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur overflow-hidden">
@@ -213,47 +220,44 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
         <CardDescription>Track record and performance metrics</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 relative">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <DetailItem icon={<Hash size={16} />} label="Total Loans" value={history.totalLoans} />
-          <DetailItem
-            icon={<BadgePercent size={16} />}
-            label="Repayment Rate"
-            value={`${history.repaymentRate.toFixed(0)}%`}
-            valueClass={
-              history.repaymentRate >= 80
-                ? "text-green-500"
-                : history.repaymentRate >= 50
-                  ? "text-yellow-500"
-                  : "text-red-500"
-            }
-          />
           <DetailItem
             icon={<DollarSign size={16} />}
             label="Total Borrowed"
             value={`${history.totalValue.toFixed(2)} ETH`}
           />
+           <DetailItem
+            icon={<BadgePercent size={16} />}
+            label="Repayment Rate"
+            value={hasFinishedLoans ? `${history.repaymentRate.toFixed(0)}%` : "New Borrower"}
+            valueClass={
+              hasFinishedLoans 
+              ? (history.repaymentRate >= 80 ? "text-green-500" : history.repaymentRate >= 50 ? "text-yellow-500" : "text-red-500")
+              : "text-muted-foreground text-xl"
+            }
+          />
           <DetailItem
             icon={<Scale size={16} />}
             label="Avg Score"
             value={
-              <div className="flex items-center gap-1">
-                {averageScore.toFixed(1)}
-                <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-              </div>
+              hasFinishedLoans ? (
+                <div className="flex items-center gap-1">
+                  {averageScore.toFixed(1)}
+                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                </div>
+              ) : (
+                "New Borrower"
+              )
             }
-            valueClass={averageScore >= 4 ? "text-green-500" : averageScore >= 2.5 ? "text-yellow-500" : "text-red-500"}
+            valueClass={
+              hasFinishedLoans
+              ? (averageScore >= 4 ? "text-green-500" : averageScore >= 2.5 ? "text-yellow-500" : "text-red-500")
+              : "text-muted-foreground text-xl"
+            }
           />
-        </div>
-        
-        <div className="flex justify-around text-center pt-4 border-t border-border/50">
-            <div>
-                <p className="text-sm text-muted-foreground">Repaid</p>
-                <p className="text-xl font-bold">{history.repaid}</p>
-            </div>
-            <div>
-                <p className="text-sm text-muted-foreground">Defaulted</p>
-                <p className="text-xl font-bold">{history.defaulted}</p>
-            </div>
+          <DetailItem icon={<CheckCircle size={16} />} label="Repaid" value={history.repaid} />
+          <DetailItem icon={<XCircle size={16} />} label="Defaulted" value={history.defaulted} />
         </div>
 
         {history.scoreDistribution.some((d) => d.count > 0) && (
@@ -282,6 +286,7 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
     </Card>
   )
 }
+
 
 function AiAnalysisCard({ loan, history }: { loan: Loan; history: BorrowerHistory }) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -412,7 +417,32 @@ export default function LoanDetailPage() {
     }
   }, [loanData, loanId])
 
-  const { history } = useBorrowerHistory(loan?.borrower);
+  const { history, tierData } = useBorrowerHistory(loan?.borrower);
+
+  const tierInfo = useMemo(() => {
+    if (tierData === undefined) return null;
+  
+    switch (tierData) {
+      case 0: // Bronze
+        return { 
+          text: "Bronze", 
+          className: "text-amber-600 border-amber-700 font-semibold" 
+        };
+      case 1: // Silver
+        return { 
+          text: "Silver", 
+          className: "text-slate-500 border-slate-500 font-semibold" 
+        };
+      case 2: // Gold
+        return { 
+          text: "Gold", 
+          className: "text-amber-500 border-amber-500 font-semibold" 
+        };
+      default:
+        return null;
+    }
+  }, [tierData]);
+
 
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
@@ -678,13 +708,6 @@ export default function LoanDetailPage() {
   const totalInterestRate = Number(loan.interestBps) / 10000
   const repaymentWithInterest = Number(formatUnits(repaymentAmount, 18))
 
-  const repaymentProgress =
-    loan.status === 3
-      ? 100
-      : loan.status === 2 && repaymentAmount > 0
-        ? (Number(loan.totalRepayment) / Number(repaymentAmount)) * 100
-        : 0
-
   return (
     <div className="min-h-screen">
       <div className="container mx-auto p-4 md:p-8 max-w-7xl">
@@ -702,6 +725,13 @@ export default function LoanDetailPage() {
                 Loan Request #{loan.id.toString()}
               </h1>
               <p className="text-sm text-muted-foreground font-mono break-all">{loan.borrower}</p>
+              {tierInfo && (
+                <div className="mt-2">
+                  <Badge variant="outline" className={`text-base px-3 py-1 ${tierInfo.className}`}>
+                    {tierInfo.text}
+                  </Badge>
+                </div>
+              )}
             </div>
             <Badge className={`${STATUS_COLORS[loan.status as keyof typeof STATUS_COLORS]} border text-base px-4 py-2 font-semibold`}>
               {STATUS_MAP[loan.status]}
@@ -732,7 +762,7 @@ export default function LoanDetailPage() {
                   icon={<TrendingUp size={18} />}
                   label="Interest"
                   value={`${(totalInterestRate * 100).toFixed(2)}%`}
-                  valueClass="text-primary"
+                  valueClass="text-white"
                 />
                 <DetailItem
                   icon={<Clock size={18} />}
@@ -761,39 +791,6 @@ export default function LoanDetailPage() {
               </CardContent>
             </Card>
             
-            {(loan.status === 2 || loan.status === 3 || loan.status === 4) && (
-              <Card className="border-border/50 bg-card/50 backdrop-blur overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-primary" />
-                    Repayment Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 relative">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-semibold text-primary">{repaymentProgress.toFixed(0)}%</span>
-                    </div>
-                    <Progress value={repaymentProgress} className="h-3" />
-                  </div>
-                  <div className="flex items-center justify-between text-sm pt-2 border-t border-border/50">
-                    <span className="text-muted-foreground">
-                      {parseFloat(formatUnits(loan.totalRepayment, 18)).toString()} / {parseFloat(repaymentWithInterest.toFixed(6))} ETH
-                    </span>
-                    {loan.status === 2 && (
-                      <span className="text-muted-foreground">
-                        Due:{" "}
-                        {new Date(
-                          (Number(loan.startTimestamp) + Number(loan.durationSecs)) * 1000,
-                        ).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {loan.borrower && <BorrowerHistoryCard borrowerAddress={loan.borrower} />}
           </div>
 

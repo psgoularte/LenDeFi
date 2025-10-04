@@ -38,7 +38,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
   const [aiError, setAiError] = useState("")
 
   const handleCopy = (e: React.MouseEvent) => {
-    e.preventDefault() // Impede a navegação do Link ao clicar no botão de copiar
+    e.preventDefault()
     navigator.clipboard.writeText(request.borrower)
     setIsCopied(true)
     setTimeout(() => {
@@ -87,6 +87,38 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
     functionName: "averageScoreOfBorrower",
     args: [request.borrower],
   })
+  
+  const { data: tierData } = useReadContract({
+    abi: LoanMarketABI,
+    address: LOAN_MARKET_ADDRESS,
+    functionName: "getBorrowerTier",
+    args: [request.borrower],
+  })
+
+  const tierInfo = useMemo(() => {
+    if (tierData === undefined) return null;
+  
+    switch (tierData) {
+      case 0: // Bronze
+        return { 
+          text: "Bronze", 
+          className: "text-amber-600 border-amber-700 font-semibold" 
+        };
+      case 1: // Silver
+        return { 
+          text: "Silver", 
+          className: "text-slate-500 border-slate-500 font-semibold" 
+        };
+      case 2: // Gold
+        return { 
+          text: "Gold", 
+          className: "text-amber-500 border-amber-500 font-semibold" 
+        };
+      default:
+        return null;
+    }
+  }, [tierData]);
+
 
   const displayScore = useMemo(() => {
     if (request.score > 0) return request.score
@@ -112,7 +144,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
   }, [request.amountRequested, request.interestBps])
 
   const handleAiAnalysis = async (e: React.MouseEvent) => {
-    e.preventDefault() // Impede a navegação
+    e.preventDefault()
     setIsAnalyzing(true)
     setAiError("")
     setAiAnalysis(null)
@@ -163,7 +195,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
   }
 
   const handleContractAction = (e: React.MouseEvent, action: () => void) => {
-    e.preventDefault() // Impede a navegação
+    e.preventDefault()
     if (!isConnected) {
       openConnectModal?.()
     } else {
@@ -395,11 +427,20 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
                   )}
                 </Button>
               </div>
-              {(isBorrower || isInvestor) && (
-                <Badge variant={isBorrower ? "default" : "default"} className="mt-2">
-                  {isBorrower ? "Your Loan" : "You are the Investor"}
-                </Badge>
-              )}
+              
+              <div className="flex items-center flex-wrap gap-2 pt-1">
+                {tierInfo && (
+                  <Badge variant="outline" className={`text-xs ${tierInfo.className}`}>
+                    {tierInfo.text}
+                  </Badge>
+                )}
+                {(isBorrower || isInvestor) && (
+                  <Badge variant={isBorrower ? "default" : "default"}>
+                    {isBorrower ? "Your Loan" : "You are the Investor"}
+                  </Badge>
+                )}
+              </div>
+
             </div>
             <div className="flex flex-col items-end">
               <Badge variant="default" className="bg-accent text-accent-foreground">

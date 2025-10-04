@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
 import { parseEther } from "viem";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { LoanMarketABI, LOAN_MARKET_ADDRESS } from "@/app/lib/contracts";
@@ -20,8 +20,8 @@ import { Label } from "@/cache/components/ui/label";
 
 interface RequestLoanDialogProps {
   triggerButtonText: string;
-  triggerButtonVariant?: ButtonProps['variant'];
-  triggerButtonSize?: ButtonProps['size'];
+  triggerButtonVariant?: ButtonProps["variant"];
+  triggerButtonSize?: ButtonProps["size"];
   triggerButtonClassName?: string;
 }
 
@@ -36,13 +36,37 @@ export function RequestLoanDialog({
   const [interestPercent, setInterestPercent] = useState("");
   const [durationDays, setDurationDays] = useState("");
   const [collateral, setCollateral] = useState("");
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
   
   const { openConnectModal } = useConnectModal();
+
+  const { data: tierData, isLoading: tierLoading } = useReadContract({
+    abi: LoanMarketABI,
+    address: LOAN_MARKET_ADDRESS,
+    functionName: 'getBorrowerTier',
+    args: [address as `0x${string}`],
+    query: {
+      enabled: isConnected && !!address && open, 
+    }
+  });
+
+  const getTierInfo = (tier: unknown) => {
+    switch (tier) {
+      case 0:
+        return { name: "Bronze", limit: "0.5 ETH" };
+      case 1:
+        return { name: "Silver", limit: "2 ETH" };
+      case 2:
+        return { name: "Gold", limit: "Unlimited" };
+      default:
+        return { name: "", limit: "" };
+    }
+  };
+  const tierInfo = getTierInfo(tierData);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +113,6 @@ export function RequestLoanDialog({
 
 
   useEffect(() => {
-
     if (open && !isConnected && openConnectModal) {
       openConnectModal();
     }
@@ -107,20 +130,30 @@ export function RequestLoanDialog({
           {triggerButtonText}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Request a New Loan</DialogTitle>
-          <DialogDescription>
+          
+          {tierLoading && (
+            <p className="text-sm text-muted-foreground pt-2">Loading your profile...</p>
+          )}
+          {tierInfo.name && (
+            <div className="text-sm font-semibold text-primary pt-2">
+              Your Tier: {tierInfo.name} | Max Loan: {tierInfo.limit}
+            </div>
+          )}
+
+          <DialogDescription className="pt-2">
             Fill in the details below. You can add optional collateral to
             increase trust.
           </DialogDescription>
         </DialogHeader>
+
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="amount" className="text-right">
-                Amount (ETH)
-              </Label>
+          <div className="flex flex-col gap-4 py-4">
+            
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="amount">Amount (ETH)</Label>
               <Input
                 id="amount"
                 type="number"
@@ -128,51 +161,48 @@ export function RequestLoanDialog({
                 placeholder="e.g., 1.5"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="col-span-3"
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="interest" className="text-right">
-                Interest (%)
-              </Label>
+            
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="interest">Interest (%)</Label>
               <Input
                 id="interest"
                 type="number"
                 placeholder="e.g., 5 for 5%"
                 value={interestPercent}
                 onChange={(e) => setInterestPercent(e.target.value)}
-                className="col-span-3"
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="duration" className="text-right">
-                Duration (Days)
-              </Label>
+
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="duration">Duration (Days)</Label>
               <Input
                 id="duration"
                 type="number"
                 placeholder="e.g., 30"
                 value={durationDays}
                 onChange={(e) => setDurationDays(e.target.value)}
-                className="col-span-3"
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="collateral" className="text-right">
-                Collateral (ETH)
-              </Label>
+
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="collateral">Collateral (ETH)</Label>
               <Input
                 id="collateral"
                 type="number"
                 placeholder="Optional, e.g., 0.1"
                 value={collateral}
                 onChange={(e) => setCollateral(e.target.value)}
-                className="col-span-3"
               />
+              <p className="text-xs text-muted-foreground pt-1">
+                To make your loan attractive, find a good balance. Higher collateral reduces risk for investors.
+              </p>
             </div>
+            
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isPending || isConfirming || !isConnected} className="w-full">
