@@ -25,16 +25,15 @@ export function PixRechargeDialog() {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [cpf, setCpf] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [amountEth, setAmountEth] = useState("");
-  const [smsCode, setSmsCode] = useState("");
+  const [emailCode, setEmailCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   
-  // States for price fetching
   const [ethPriceBRL, setEthPriceBRL] = useState<number | null>(null);
   const [brlAmount, setBrlAmount] = useState<string>("");
   const [isPriceLoading, setIsPriceLoading] = useState(true);
@@ -42,7 +41,6 @@ export function PixRechargeDialog() {
   const { address: userAddress, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
   
-  // Effect to fetch ETH price when the dialog opens
   useEffect(() => {
     if (open && step === 1) {
       const fetchEthPrice = async () => {
@@ -63,7 +61,6 @@ export function PixRechargeDialog() {
     }
   }, [open, step]);
 
-  // Effect to calculate BRL amount in real-time
   useEffect(() => {
     const ethValue = parseFloat(amountEth);
     if (ethValue > 0 && ethPriceBRL) {
@@ -84,9 +81,9 @@ export function PixRechargeDialog() {
     setStep(1);
     setName("");
     setCpf("");
-    setPhone("");
+    setEmail("");
     setAmountEth("");
-    setSmsCode("");
+    setEmailCode("");
     setFeedbackMessage("");
     setIsSubmitting(false);
     setIsError(false);
@@ -106,20 +103,20 @@ export function PixRechargeDialog() {
     }
   };
 
-  const handleRequestSmsCode = async (e: React.FormEvent) => {
+  const handleRequestEmailCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
-    if (!name || !cpf || !phone || !amountEth) return;
+    if (!name || !cpf || !email || !amountEth) return;
 
     setIsSubmitting(true);
     setFeedbackMessage("");
     setIsError(false);
 
     try {
-      const response = await fetch('/api/pix-mock/send-sms', {
+      const response = await fetch('/api/pix-mock/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ email }),
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({ error: "Failed to send code" }));
@@ -148,10 +145,10 @@ export function PixRechargeDialog() {
         body: JSON.stringify({
           nome: name,
           cpf: cpf,
-          telefone: phone,
+          email: email,
           enderecoEthereum: userAddress,
           valorEth: amountEth,
-          smsCode: smsCode,
+          emailCode: emailCode,
         }),
       });
       const data = await response.json();
@@ -182,7 +179,7 @@ export function PixRechargeDialog() {
               <DialogTitle>Recharge with PIX</DialogTitle>
               <DialogDescription>Enter your details and the amount you wish to recharge.</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleRequestSmsCode}>
+            <form onSubmit={handleRequestEmailCode}>
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="pix-name">Full Name</Label>
@@ -193,8 +190,8 @@ export function PixRechargeDialog() {
                   <Input id="pix-cpf" type="text" placeholder="000.000.000-00" value={cpf} onChange={(e) => setCpf(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pix-phone">Phone Number</Label>
-                  <Input id="pix-phone" type="tel" placeholder="+55 11 91234 5678" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                  <Label htmlFor="pix-email">Email</Label>
+                  <Input id="pix-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pix-amount">Amount (ETH)</Label>
@@ -224,19 +221,19 @@ export function PixRechargeDialog() {
         {step === 1.5 && (
           <>
             <DialogHeader>
-              <DialogTitle>Verify Your Phone</DialogTitle>
+              <DialogTitle>Verify Your Email</DialogTitle>
               <DialogDescription>
-                We sent a 6-digit code to {phone}. Please enter it below to continue.
+                We sent a 6-digit code to {email}. Please enter it below to continue.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="sms-code">Verification Code</Label>
-                <Input id="sms-code" type="text" placeholder="123456" value={smsCode} onChange={(e) => setSmsCode(e.target.value)} required maxLength={6} />
+                <Label htmlFor="email-code">Verification Code</Label>
+                <Input id="email-code" type="text" placeholder="123456" value={emailCode} onChange={(e) => setEmailCode(e.target.value)} required maxLength={6} />
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => setStep(2)} className="w-full" disabled={smsCode.length < 6}>
+              <Button onClick={() => setStep(2)} className="w-full" disabled={emailCode.length < 6}>
                 Verify & Proceed to Payment
               </Button>
             </DialogFooter>
@@ -250,9 +247,7 @@ export function PixRechargeDialog() {
               <DialogDescription>
                 Scan the QR Code with your banking app to finalize the recharge of {amountEth} ETH.
               </DialogDescription>
-              <p className="text-bold size-xl">
-                R$ {brlAmount}
-              </p>
+              <p className="text-white-bold size-xl mt-6">R$ {brlAmount}</p>
             </DialogHeader>
             <div className="py-6 flex flex-col items-center gap-4">
               <div className="p-4 bg-white rounded-lg"><QRCodeSVG value={FAKE_PIX_KEY} size={192} /></div>

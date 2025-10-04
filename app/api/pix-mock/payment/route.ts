@@ -5,8 +5,8 @@ import { sepolia } from 'viem/chains';
 import { Redis } from '@upstash/redis';
 
 if (!process.env.SEPOLIA_URL || !process.env.PRIVATE_KEY || !process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    console.error("FATAL: Missing one or more environment variables");
-    throw new Error("Server configuration incomplete.");
+    console.error("FATAL: Faltando uma ou mais variáveis de ambiente (SEPOLIA_URL, PRIVATE_KEY, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN)");
+    throw new Error("Configuração do servidor incompleta.");
 }
 
 const redis = new Redis({
@@ -22,46 +22,50 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { nome, telefone, enderecoEthereum, valorEth, smsCode } = body;
+    const { nome, cpf, email, enderecoEthereum, valorEth, emailCode } = body;
 
-    const sanitizedPhone = (telefone || '').replace(/\D/g, '');
-    const userCode = (smsCode || '').trim();
-    const redisKey = `sms-code:${sanitizedPhone}`;
+    const userCode = (emailCode || '').trim();
+    const redisKey = `email-code:${email}`;
     
     const storedCodeFromRedis = await redis.get(redisKey);
 
     if (storedCodeFromRedis === null || storedCodeFromRedis === undefined) {
-      console.error(`[${transactionId}] FAILED. No code found in Redis for key: ${redisKey}`);
-      return NextResponse.json({ error: "Verification code has expired or was not found." }, { status: 400 });
+      return NextResponse.json({ error: "Código de verificação expirou ou não foi encontrado." }, { status: 400 });
     }
 
     const storedCodeAsString = String(storedCodeFromRedis);
     
     if (storedCodeAsString !== userCode) {
-        console.error(`[${transactionId}] FAILED. Codes do not match. User: '${userCode}', Stored: '${storedCodeAsString}'`);
-        return NextResponse.json({ error: "Invalid verification code." }, { status: 400 });
+        return NextResponse.json({ error: "Código de verificação inválido." }, { status: 400 });
     }
     
-    console.log(`[${transactionId}] Verification successful. Deleting code.`);
     await redis.del(redisKey);
 
-    const valueInWei = parseEther(valorEth);
-    const txHash = await walletClient.sendTransaction({ to: enderecoEthereum, value: valueInWei });
 
-    console.log(`[${transactionId}] SUCCESS! Transaction hash: ${txHash}`);
+    console.log(`[${transactionId}] Verificação de e-mail bem-sucedida para ${nome}. Processando pagamento...`);
+    const valueInWei = parseEther(valorEth);
+    const txHash = await walletClient.sendTransaction({
+      to: enderecoEthereum,
+      value: valueInWei,
+    });
+
+    console.log(`[${transactionId}] SUCESSO! Hash da transação: ${txHash}`);
     return NextResponse.json({
-        message: "Transaction sent successfully!",
+        message: "Transação enviada com sucesso!",
         status: "SUBMITTED",
         transactionId: transactionId,
         transactionHash: txHash
     }, { status: 200 });
 
   } catch (error: unknown) {
-    let errorMessage = "An unknown error occurred.";
-    if (error instanceof BaseError) errorMessage = error.shortMessage;
-    else if (error instanceof Error) errorMessage = error.message;
+    let errorMessage = "Ocorreu um erro desconhecido.";
+    if (error instanceof BaseError) {
+        errorMessage = error.shortMessage;
+    } else if (error instanceof Error) {
+        errorMessage = error.message;
+    }
 
-    console.error(`[${transactionId}] CRITICAL ERROR in handler:`, errorMessage, error);
-    return NextResponse.json({ error: `Failed to process request: ${errorMessage}` }, { status: 500 });
+    console.error(`[${transactionId}] ERRO CRÍTICO no manipulador de pagamento:`, errorMessage, error);
+    return NextResponse.json({ error: `Falha ao processar a requisição: ${errorMessage}` }, { status: 500 });
   }
 }
