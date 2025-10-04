@@ -156,17 +156,6 @@ export function HowItWorks() {
                 </div>
               </div>
             </div>
-
-
-          <div className="mt-24 mb-24 max-w-4xl mx-auto">
-            <h3 className="text-2xl font-semibold mb-4 text-center text-white">
-              Watch Our Explainer Video
-            </h3>
-            {/* Vídeo atualizado com o ID: sDBiXUHufmc*/} 
-            <YouTubeEmbed videoId="sDBiXUHufmc" />
-          </div>
-
-
             <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="border-primary/20">
                 <CardContent className="p-6 text-center">
