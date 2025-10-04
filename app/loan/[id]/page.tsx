@@ -6,7 +6,7 @@ import { useParams } from "next/navigation"
 import { useAccount, useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 import { formatUnits, type Address } from "viem"
 import { LoanMarketABI, LOAN_MARKET_ADDRESS } from "@/app/lib/contracts"
-import type { Loan, AiAnalysisResult } from "@/app/lib/types" // Adicione AiAnalysisResult aos seus tipos
+import type { Loan, AiAnalysisResult } from "@/app/lib/types"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/cache/components/ui/card"
 import { Button } from "@/cache/components/ui/button"
 import { Badge } from "@/cache/components/ui/badge"
@@ -28,6 +28,8 @@ import {
   Scale,
   ArrowLeft,
   Sparkles,
+  CheckCircle,
+  XCircle,
 } from "lucide-react"
 import Link from "next/link"
 import { useConnectModal } from "@rainbow-me/rainbowkit"
@@ -82,11 +84,11 @@ function useBorrowerHistory(borrowerAddress?: Address) {
     const scoreCounts: { [key: number]: number } = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
 
     for (const loan of borrowerLoans) {
-      const status = loan[6] // Status
-      totalValue += loan[1] // amountRequested
-      if (status === 3) repaid++ // Repaid
-      if (status === 4) defaulted++ // Defaulted
-      const score = Number(loan[10]) // score
+      const status = loan[6]
+      totalValue += loan[1]
+      if (status === 3) repaid++
+      if (status === 4) defaulted++
+      const score = Number(loan[10])
       if (score >= 1 && score <= 5) {
         scoreCounts[score]++
       }
@@ -97,7 +99,7 @@ function useBorrowerHistory(borrowerAddress?: Address) {
 
     const scoreDistribution = Object.entries(scoreCounts).map(([score, count]) => ({
       name: `${score}★`,
-      count: count,
+      count,
     }))
 
     return {
@@ -134,7 +136,7 @@ function DetailItem({
         <span className="text-primary/70 group-hover:text-primary transition-colors">{icon}</span>
         <span>{label}</span>
       </div>
-      <p className={`text-2xl font-bold tracking-tight ${valueClass || "text-foreground"}`}>{value}</p>
+      <div className={`text-2xl font-bold tracking-tight ${valueClass || "text-foreground"}`}>{value}</div>
     </div>
   )
 }
@@ -190,6 +192,7 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
         <CardDescription>Track record and performance metrics</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 relative">
+        {/* ✅ VOLTANDO PARA OS 4 PARÂMETROS ANTIGOS NA GRADE PRINCIPAL */}
         <div className="grid grid-cols-2 gap-3">
           <DetailItem icon={<Hash size={16} />} label="Total Loans" value={history.totalLoans} />
           <DetailItem
@@ -221,6 +224,18 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
             valueClass={averageScore >= 4 ? "text-green-500" : averageScore >= 2.5 ? "text-yellow-500" : "text-red-500"}
           />
         </div>
+        
+        {/* ✅ ADICIONANDO REPAID E DEFAULTED ABAIXO, SEM COR */}
+        <div className="flex justify-around text-center pt-4 border-t border-border/50">
+            <div>
+                <p className="text-sm text-muted-foreground">Repaid</p>
+                <p className="text-xl font-bold">{history.repaid}</p>
+            </div>
+            <div>
+                <p className="text-sm text-muted-foreground">Defaulted</p>
+                <p className="text-xl font-bold">{history.defaulted}</p>
+            </div>
+        </div>
 
         {history.scoreDistribution.some((d) => d.count > 0) && (
           <div className="pt-6 border-t border-border/50">
@@ -233,15 +248,14 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
                 <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                 <Tooltip
-                  cursor={{ fill: "rgba(16, 185, 129, 0.1)" }}
+                  cursor={{ fill: "hsla(var(--primary), 0.1)" }}
                   contentStyle={{
-                    backgroundColor: "rgb(20, 20, 24)",
-                    border: "1px solid rgb(39, 39, 42)",
-                    borderRadius: "0.5rem",
-                    color: "rgb(250, 250, 250)",
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
                   }}
                 />
-                <Bar dataKey="count" fill="rgb(34, 197, 94)" radius={[8, 8, 0, 0]} />
+                {/* ✅ COR ADICIONADA ÀS BARRAS */}
+                <Bar dataKey="count" fill="#ff7300" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -286,6 +300,13 @@ function AiAnalysisCard({ loan, history }: { loan: Loan; history: any }) {
             setIsAnalyzing(false);
         }
     };
+    
+    const riskScoreColor = useMemo(() => {
+        if (!aiAnalysis) return "text-foreground";
+        if (aiAnalysis.riskScore >= 75) return "text-green-500";
+        if (aiAnalysis.riskScore >= 50) return "text-yellow-500";
+        return "text-red-500";
+    }, [aiAnalysis]);
 
     return (
         <Card className="border-border/50 bg-card/50 backdrop-blur">
@@ -300,8 +321,8 @@ function AiAnalysisCard({ loan, history }: { loan: Loan; history: any }) {
                     <p className="animate-pulse">Analyzing on-chain data...</p>
                 ) : aiAnalysis ? (
                     <div>
-                        <p className="text-sm text-muted-foreground">Risk Score</p>
-                        <p className="text-3xl font-bold text-green-500 mb-2">{aiAnalysis.riskScore}/100</p>
+                        <p className="text-sm text-muted-foreground">AI Risk Score</p>
+                        <p className={`text-3xl font-bold mb-2 ${riskScoreColor}`}>{aiAnalysis.riskScore}/100</p>
                         <p className="text-sm text-muted-foreground">{aiAnalysis.analysis}</p>
                     </div>
                 ) : (
@@ -402,7 +423,7 @@ export default function LoanDetailPage() {
   }, [loan])
 
   const isBorrowerWithdrawPeriodExpired = useMemo(() => {
-    if (!loan || loan.status !== 1) return false // Only relevant if Funded
+    if (!loan || loan.status !== 1) return false
     const withdrawalDeadline = loan.startTimestamp + loan.durationSecs
     return BigInt(Math.floor(Date.now() / 1000)) > withdrawalDeadline
   }, [loan])
@@ -693,7 +714,7 @@ export default function LoanDetailPage() {
                   icon={<TrendingUp size={18} />}
                   label="Interest"
                   value={`${(totalInterestRate * 100).toFixed(2)}%`}
-                  valueClass="text-green-500"
+                  valueClass="text-white"
                 />
                 <DetailItem
                   icon={<Clock size={18} />}
@@ -704,12 +725,12 @@ export default function LoanDetailPage() {
                   icon={<ShieldCheck size={18} />}
                   label="Collateral"
                   value={loan.collateralAmount > 0 ? `${formatUnits(loan.collateralAmount, 18)} ETH` : "None"}
-                  valueClass={loan.collateralAmount > 0 ? "text-green-500" : "text-muted-foreground"}
+                  valueClass={loan.collateralAmount > 0 ? "text-foreground" : "text-muted-foreground"}
                 />
                 <DetailItem
                   icon={<DollarSign size={18} />}
                   label="Repayment"
-                  value={`${repaymentWithInterest.toFixed(4)} ETH`}
+                  value={`${parseFloat(repaymentWithInterest.toFixed(6))} ETH`}
                   valueClass="text-primary"
                 />
                 <DetailItem
@@ -721,12 +742,44 @@ export default function LoanDetailPage() {
                 />
               </CardContent>
             </Card>
+            
+            {(loan.status === 2 || loan.status === 3 || loan.status === 4) && (
+              <Card className="border-border/50 bg-card/50 backdrop-blur overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" />
+                    Repayment Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 relative">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Progress</span>
+                      <span className="font-semibold text-primary">{repaymentProgress.toFixed(0)}%</span>
+                    </div>
+                    <Progress value={repaymentProgress} className="h-3" />
+                  </div>
+                  <div className="flex items-center justify-between text-sm pt-2 border-t border-border/50">
+                    <span className="text-muted-foreground">
+                      {formatUnits(loan.totalRepayment, 18)} / {parseFloat(repaymentWithInterest.toFixed(6))} ETH
+                    </span>
+                    {loan.status === 2 && (
+                      <span className="text-muted-foreground">
+                        Due:{" "}
+                        {new Date(
+                          (Number(loan.startTimestamp) + Number(loan.durationSecs)) * 1000,
+                        ).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {loan.borrower && <BorrowerHistoryCard borrowerAddress={loan.borrower} />}
           </div>
 
           <div className="space-y-6">
-            
             <Card className="border-border/50 bg-card/50 backdrop-blur">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -740,7 +793,9 @@ export default function LoanDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
             {loan.status === 0 && <AiAnalysisCard loan={loan} history={history} />}
+
             <Card className="sticky top-24 border-primary/20 bg-card/80 backdrop-blur shadow-xl shadow-primary/5">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none rounded-lg" />
               <CardHeader className="relative">
