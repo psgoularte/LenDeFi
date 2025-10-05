@@ -11,15 +11,31 @@ import {
   DropdownMenuTrigger,
 } from "@/cache/components/ui/dropdown-menu";
 
+// 1. Importe os hooks necessários
+import { useAccount } from "wagmi";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
+
 import { RequestLoanDialog } from "../loan/RequestLoanDialog";
 import { PixRechargeDialog } from "../PixRechargeDialog"; 
 import { PixWithdrawDialog } from "../PixWithdrawDialog";
 import { ArrowDown } from "lucide-react";
 
 export function Header() {
-  // Estados para controlar qual diálogo está aberto
   const [rechargeOpen, setRechargeOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+
+  const { isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleMenuOpenChange = (open: boolean) => {
+    if (open && !isConnected) {
+      openConnectModal?.(); 
+      setIsMenuOpen(false);  
+    } else {
+      setIsMenuOpen(open);
+    }
+  };
 
   return (
     <>
@@ -38,8 +54,7 @@ export function Header() {
                 triggerButtonClassName="bg-black text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-black"
               />
 
-              {/* O Dropdown Menu que unifica as operações PIX */}
-              <DropdownMenu>
+              <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpenChange}>
                 <DropdownMenuTrigger asChild>
                   <Button size="lg" variant="outline" className="bg-black text-green-500 border-green-500 hover:bg-green-500 hover:text-black">
                     PIX Operations

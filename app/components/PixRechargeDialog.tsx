@@ -199,7 +199,7 @@ export function PixRechargeDialog({ open, onOpenChange }: { open: boolean, onOpe
                 <div className="text-center text-sm text-muted-foreground h-5 flex items-center justify-center">
                   {isPriceLoading && <><Loader2 className="mr-2 h-4 w-4 animate-spin" /><span>Loading price...</span></>}
                   {!isPriceLoading && ethPriceBRL && brlAmount && (
-                    <span>~ R$ <strong>{brlAmount}</strong></span>
+                    <span>You need to send ~ R$ <strong>{brlAmount}</strong></span>
                   )}
                   {!isPriceLoading && !ethPriceBRL && (
                     <span className="text-red-500">Could not load price.</span>
