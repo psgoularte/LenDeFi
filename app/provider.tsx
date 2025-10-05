@@ -13,7 +13,6 @@ import merge from 'lodash.merge';
 
 const queryClient = new QueryClient();
 
-// -> 3. Defina seu tema customizado
 const myTheme = merge(lightTheme(), {
   colors: {
     accentColor: '#0066ffff',
