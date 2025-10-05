@@ -41,6 +41,13 @@ export async function POST(request: Request) {
     
     await redis.del(redisKey);
 
+    // --- LÓGICA DE MOCK PARA ENVIO DE ETH ---
+    // AVISO DE SEGURANÇA: Esta implementação é apenas para fins de demonstração.
+    // Em um sistema de produção real, o envio de ETH NUNCA deve ser acionado
+    // diretamente pelo pedido do cliente. Ele deve ser acionado por um evento
+    // verificado do sistema de pagamento (ex: um webhook do provedor PIX)
+    // que confirme o recebimento do dinheiro.
+    // --- FIM DO AVISO ---
 
     console.log(`[${transactionId}] Verificação de e-mail bem-sucedida para ${nome}. Processando pagamento...`);
     const valueInWei = parseEther(valorEth);

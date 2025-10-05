@@ -11,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/cache/components/ui/dialog";
 import { Input } from "@/cache/components/ui/input";
 import { Label } from "@/cache/components/ui/label";
@@ -20,8 +19,9 @@ import { QRCodeSVG } from 'qrcode.react';
 
 const FAKE_PIX_KEY = "00020126580014br.gov.bcb.pix0136a6f4-8a53-435a-9d2a-43f65b3d2b215204000053039865802BR5913John Doe6009Sao Paulo62070503***6304E7C1";
 
-export function PixRechargeDialog() {
-  const [open, setOpen] = useState(false);
+// 1. Componente agora aceita props para ser controlado externamente
+export function PixRechargeDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
+  // 2. O estado 'open' interno foi removido daqui
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [cpf, setCpf] = useState("");
@@ -92,12 +92,13 @@ export function PixRechargeDialog() {
     setBrlAmount("");
   };
   
+  // 3. O handler agora usa a função 'onOpenChange' vinda das props
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen && !isConnected) {
       openConnectModal?.();
       return;
     }
-    setOpen(isOpen);
+    onOpenChange(isOpen);
     if (!isOpen) {
       resetState();
     }
@@ -166,12 +167,9 @@ export function PixRechargeDialog() {
   };
 
   return (
+    // O Dialog agora é controlado diretamente pelas props 'open' e 'onOpenChange'
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="lg" variant="outline" className="bg-black text-green-500 border-green-500 hover:bg-green-500 hover:text-black">
-          PIX Recharge
-        </Button>
-      </DialogTrigger>
+      {/* 4. O DialogTrigger FOI REMOVIDO DAQUI */}
       <DialogContent className="sm:max-w-[425px]">
         {step === 1 && (
           <>
@@ -287,7 +285,8 @@ export function PixRechargeDialog() {
               </Button>
             </div>
             <DialogFooter>
-              <Button onClick={() => handleOpenChange(false)} className="w-full">
+              {/* O botão de fechar agora usa a prop 'onOpenChange' para fechar o diálogo */}
+              <Button onClick={() => onOpenChange(false)} className="w-full">
                 Close
               </Button>
             </DialogFooter>
