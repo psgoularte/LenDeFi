@@ -1,13 +1,12 @@
-// src/components/Header.tsx (arquivo para modificar)
-
 "use client";
 
 import Image from "next/image";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { RequestLoanDialog } from "../loan/RequestLoanDialog";
 import { PixRechargeDialog } from "../PixRechargeDialog";
+import { PixWithdrawDialog } from "../PixWithdrawDialog"; 
 import { CustomConnectButton } from '../CustomConnectButton';
-import { UserStatus } from "../UserStatus"; // <-- 1. IMPORTE O COMPONENTE
+import { UserStatus } from "../UserStatus"; 
 
 export function Header() {
   return (
@@ -34,7 +33,8 @@ export function Header() {
 
             <PixRechargeDialog />
             
-            <UserStatus /> {/* <-- 2. ADICIONE O COMPONENTE AQUI */}
+            <PixWithdrawDialog /> 
+            <UserStatus /> 
             
             <ConnectButton />
           </nav>

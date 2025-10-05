@@ -1,9 +1,6 @@
 import { Card, CardContent } from "@/cache/components/ui/card";
 import { Users, TrendingUp, ShieldCheck } from "lucide-react";
-// As importações originais de Card e CardContent foram substituídas por simulações simples
-// para evitar erros de compilação em ambientes restritos de módulos.
 
-// SIMULAÇÃO: Substituição dos componentes Card e CardContent
 function CardSimples({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`rounded-xl border bg-card text-card-foreground shadow-sm bg-gray-900 border-gray-700/80 ${className}`}>
@@ -21,13 +18,12 @@ function CardContentSimples({ className, children }: { className: string, childr
 
 // Componente YouTubeEmbed embutido neste ficheiro.
 function YouTubeEmbed({ videoId }: { videoId: string }) {
-    // Usa a técnica de 'padding-top' para garantir a proporção 16:9, tornando o vídeo responsivo.
     return (
         <div className="relative w-full overflow-hidden rounded-xl shadow-2xl border border-gray-700/50 bg-black/50" 
              style={{ paddingTop: '56.25%' }}>
           <iframe
             className="absolute top-0 left-0 w-full h-full"
-            // Use o ID de vídeo desejado aqui.
+            // ID de vídeo
             src={`https://www.youtube.com/embed/${videoId}`}
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -48,7 +44,6 @@ export function HowItWorks() {
           </h2>
 
           <div className="space-y-12">
-            {/* --- ETAPA 1: CRIAÇÃO --- */}
             <div className="relative flex items-start">
               <div className="flex-shrink-0">
                 <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground">
@@ -68,7 +63,6 @@ export function HowItWorks() {
               </div>
             </div>
 
-            {/* --- ETAPA 2: DECISÃO (FINANCIADO OU NÃO) --- */}
             <div className="relative flex items-start">
               <div className="flex-shrink-0">
                 <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground">
@@ -112,7 +106,6 @@ export function HowItWorks() {
               </div>
             </div>
 
-            {/* --- ETAPA 3: RESULTADO (PAGO OU INADIMPLENTE) --- */}
             <div className="relative flex items-start">
               <div className="flex-shrink-0">
                 <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground">
