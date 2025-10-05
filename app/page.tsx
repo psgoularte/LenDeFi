@@ -269,7 +269,7 @@ export default function InvestmentRequestsPage() {
         
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-            <div className="w-full sm:w-270">
+            <div className="w-full sm:w-265">
               <Input
                 type="text"
                 placeholder="Search by ID or Borrower Address..."
