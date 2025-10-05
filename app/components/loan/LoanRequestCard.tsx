@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react" // Importe o useEffect
 import { Card, CardContent, CardHeader, CardTitle } from "@/cache/components/ui/card"
 import { Badge } from "@/cache/components/ui/badge"
 import { Button } from "@/cache/components/ui/button"
@@ -36,6 +36,24 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysisResult | null>(null)
   const [aiError, setAiError] = useState("")
+  const [ethPriceBRL, setEthPriceBRL] = useState<number | null>(null) // State para o preço do ETH
+
+  // Efeito para buscar o preço do ETH quando o componente montar
+  useEffect(() => {
+    const fetchEthPrice = async () => {
+      try {
+        const response = await fetch("/api/eth-price") // O endpoint que você já tem
+        if (!response.ok) {
+          throw new Error("Falha ao buscar o preço do ETH.")
+        }
+        const data = await response.json()
+        setEthPriceBRL(data.brlPrice)
+      } catch (error) {
+        console.error("Não foi possível buscar o preço do ETH:", error)
+      }
+    }
+    fetchEthPrice()
+  }, [])
 
   const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -69,6 +87,14 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     })
+  
+  // Função para formatar o valor em BRL
+  const formatBrlValue = (ethValue: number) => {
+    if (!ethPriceBRL) return null
+    const brlValue = ethValue * ethPriceBRL
+    return `${brlValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BRL`
+  }
+
 
   const isRepaymentDue = useMemo(() => {
     if (request.status !== 1 && request.status !== 2) return false
@@ -495,6 +521,12 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
                 <span className="text-sm font-medium">Loan Amount</span>
               </div>
               <p className="text-2xl font-bold">{formatNumber(Number(formatUnits(request.amountRequested, 18)))} ETH</p>
+              {/* Adicionado o valor em BRL aqui */}
+              {ethPriceBRL && (
+                <p className="text-sm font-bold text-muted-foreground">
+                  {formatBrlValue(Number(formatUnits(request.amountRequested, 18)))}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -503,6 +535,12 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
                 <span className="text-sm font-medium">Total Repayment</span>
               </div>
               <p className="text-2xl font-bold">{formatNumber(repaymentWithInterest)} ETH</p>
+              {/* Adicionado o valor em BRL aqui */}
+              {ethPriceBRL && (
+                <p className="text-sm font-bold text-muted-foreground">
+                    {formatBrlValue(repaymentWithInterest)}
+                </p>
+              )}
             </div>
           </div>
           {request.collateralAmount > 0 && (
@@ -524,6 +562,12 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
               <p className="text-xl font-bold">
                 {formatNumber(Number(formatUnits(request.collateralAmount, 18)))} ETH
               </p>
+              {/* Adicionado o valor em BRL aqui */}
+              {ethPriceBRL && (
+                <p className="text-sm font-bold text-muted-foreground">
+                  {formatBrlValue(Number(formatUnits(request.collateralAmount, 18)))}
+                </p>
+              )}
             </div>
           )}
           <div className="pt-2 mt-auto">
