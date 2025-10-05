@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/cache/components/ui/
 import { Badge } from "@/cache/components/ui/badge"
 import { Button } from "@/cache/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/cache/components/ui/tooltip"
-import { Star, TrendingUp, DollarSign, ShieldCheck, Sparkles, Info, Copy, Check } from "lucide-react"
+import { Medal, Star, TrendingUp, DollarSign, ShieldCheck, Sparkles, Info, Copy, Check } from "lucide-react"
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 import Link from "next/link"
 import { useConnectModal } from "@rainbow-me/rainbowkit"
@@ -95,6 +95,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
     args: [request.borrower],
   })
 
+  // ALTERADO: Tamanho do ícone aumentado para h-5 w-5
   const tierInfo = useMemo(() => {
     if (tierData === undefined) return null;
   
@@ -102,17 +103,20 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
       case 0: // Bronze
         return { 
           text: "Bronze", 
-          className: "text-amber-600 border-amber-700 font-semibold" 
+          className: "text-amber-700 border-amber-700 font-semibold",
+          icon: <Medal className="h-7 w-7 text-amber-700" />
         };
       case 1: // Silver
         return { 
           text: "Silver", 
-          className: "text-slate-500 border-slate-500 font-semibold" 
+          className: "text-slate-500 border-slate-500 font-semibold",
+          icon: <Medal className="h-7 w-7 text-slate-500" />
         };
       case 2: // Gold
         return { 
           text: "Gold", 
-          className: "text-amber-500 border-amber-500 font-semibold" 
+          className: "text-amber-500 border-amber-500 font-semibold",
+          icon: <Medal className="h-7 w-7 text-amber-500" />
         };
       default:
         return null;
@@ -211,7 +215,6 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
   }, [request.status, request.startTimestamp, request.durationSecs])
 
   const renderActionButtons = () => {
-    // Caso 1: O usuário é o TOMADOR do empréstimo
     if (isBorrower) {
       switch (request.status) {
         case 0: // Open
@@ -257,7 +260,6 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
       }
     }
 
-    // Caso 2: O usuário é o INVESTIDOR do empréstimo
     if (isInvestor) {
       switch (request.status) {
         case 1: // Funded
@@ -350,7 +352,6 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
       )
     }
 
-    // Caso 3: O usuário é um INVESTIDOR EM POTENCIAL
     const isLoanOpenForInvestment = request.status === 0
     return (
       <div className="space-y-3">
@@ -430,7 +431,9 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
               
               <div className="flex items-center flex-wrap gap-2 pt-1">
                 {tierInfo && (
-                  <Badge variant="outline" className={`text-xs ${tierInfo.className}`}>
+                  // ALTERADO: Aumenta o padding (px-3 py-1), o tamanho da fonte (text-sm) e o espaçamento (gap-2)
+                  <Badge variant="outline" className={`text-sm flex items-center gap-2 px-3 py-1 ${tierInfo.className}`}>
+                    {tierInfo.icon}
                     {tierInfo.text}
                   </Badge>
                 )}

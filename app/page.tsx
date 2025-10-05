@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, JSX } from "react";
 import Image from "next/image";
 import { useAccount, useReadContract, useReadContracts } from "wagmi";
 import { LoanMarketABI, LOAN_MARKET_ADDRESS } from "@/app/lib/contracts";
-import type { Loan } from "@/app/lib/types";
+import type { Loan, AiAnalysisResult } from "@/app/lib/types"; // Garanta que AiAnalysisResult esteja no seu types
+import { formatUnits } from "viem";
 
 // Importando componentes
 import { Header } from "@/app/components/layout/Header";
@@ -21,6 +22,7 @@ import { Label } from "@/cache/components/ui/label";
 import { Card, CardContent } from "@/cache/components/ui/card";
 import { Input } from "@/cache/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/cache/components/ui/tabs";
+import { Medal, List } from "lucide-react";
 
 // Definição de Tier: 0 = Bronze, 1 = Silver, 2 = Gold, -1 = All
 type Tier = -1 | 0 | 1 | 2;
@@ -31,14 +33,16 @@ export default function InvestmentRequestsPage() {
   const [showMyLoansOnly, setShowMyLoansOnly] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTier, setSelectedTier] = useState<string>("-1"); 
+  
   const itemsPerPage = 9;
   const { isConnected, address: userAddress } = useAccount();
 
-  const tierOptions: { value: Tier; label: string; className: string }[] = [
-    { value: -1, label: "All Loans", className: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-    { value: 2, label: "Gold", className: "data-[state=active]:bg-yellow-500 data-[state=active]:text-black hover:bg-yellow-600/50" },
-    { value: 1, label: "Silver", className: "data-[state=active]:bg-slate-500 data-[state=active]:text-black hover:bg-slate-600/50" },
-    { value: 0, label: "Bronze", className: "data-[state=active]:bg-amber-700 data-[state=active]:text-black hover:bg-amber-800/50" },
+  // ALTERADO: Cores de fundo do estado ativo agora são mais claras
+  const tierOptions: { value: Tier; label: string; className: string; icon: JSX.Element }[] = [
+    { value: -1, label: "All", className: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground", icon: <List className="h-4 w-4" /> },
+    { value: 2, label: "Gold", className: "data-[state=active]:bg-yellow-300 data-[state=active]:text-black hover:bg-yellow-300/50", icon: <Medal className="h-4 w-4 text-yellow-500 data-[state=active]:text-black" /> },
+    { value: 1, label: "Silver", className: "data-[state=active]:bg-slate-300 data-[state=active]:text-black hover:bg-slate-300/50", icon: <Medal className="h-4 w-4 text-slate-500 data-[state=active]:text-black" /> },
+    { value: 0, label: "Bronze", className: "data-[state=active]:bg-amber-400 data-[state=active]:text-black hover:bg-amber-400/50", icon: <Medal className="h-4 w-4 text-amber-700 data-[state=active]:text-black" /> },
   ];
 
   const { data: loanCount, isLoading: isLoadingCount } = useReadContract({
@@ -67,12 +71,9 @@ export default function InvestmentRequestsPage() {
     if (!loansData) return [];
     const uniqueAddresses = new Set<string>();
     loansData.forEach(result => {
-      if (result.result) {
-        const decoded = result.result as unknown as [
-          `0x${string}`, bigint, bigint, bigint, bigint, bigint, number, bigint,
-          bigint, `0x${string}`, number, bigint, bigint, boolean
-        ];
-        uniqueAddresses.add(decoded[0].toLowerCase());
+      if (result.status === 'success' && result.result) {
+        const borrowerAddress = (result.result as any)[0];
+        uniqueAddresses.add(borrowerAddress.toLowerCase());
       }
     });
     return Array.from(uniqueAddresses);
@@ -96,7 +97,7 @@ export default function InvestmentRequestsPage() {
     const map = new Map<string, number>();
     if (tiersData) {
       tiersData.forEach((result, i) => {
-        if (result.result !== undefined && borrowerAddresses[i]) {
+        if (result.status === 'success' && result.result !== undefined && borrowerAddresses[i]) {
           map.set(borrowerAddresses[i], Number(result.result));
         }
       });
@@ -104,18 +105,11 @@ export default function InvestmentRequestsPage() {
     return map;
   }, [tiersData, borrowerAddresses]);
 
-
   useEffect(() => {
     if (loansData) {
       const formattedLoans = loansData.map((result, i) => {
-        if (!result.result) {
-          return null; 
-        }
-
-        const decoded = result.result as unknown as [
-          `0x${string}`, bigint, bigint, bigint, bigint, bigint, number, bigint,
-          bigint, `0x${string}`, number, bigint, bigint, boolean
-        ];
+        if (!result.result) return null;
+        const decoded = result.result as any;
         return {
           id: BigInt(i),
           borrower: decoded[0],
@@ -134,7 +128,6 @@ export default function InvestmentRequestsPage() {
           collateralClaimed: decoded[13],
         };
       }).filter((loan): loan is Loan => loan !== null);
-
       setLoans(formattedLoans.reverse());
     }
   }, [loansData]);
@@ -155,7 +148,6 @@ export default function InvestmentRequestsPage() {
 
   const filteredLoans = useMemo(() => {
     const currentTier = Number(selectedTier);
-
     return loans
       .filter((loan) => loan.status !== 5) 
       .filter((loan) => {
@@ -168,24 +160,18 @@ export default function InvestmentRequestsPage() {
       })
       .filter((loan) => {
         if (currentTier === -1) return true;
-        
         const borrowerAddr = loan.borrower.toLowerCase();
         const tier = borrowerTierMap.get(borrowerAddr);
-
         return tier !== undefined && tier === currentTier;
       })
       .filter((loan) => {
         const term = searchTerm.trim();
-        if (!term) {
-          return true;
-        }
+        if (!term) return true;
         const isNumericSearch = /^\d+$/.test(term);
-
         if (isNumericSearch) {
           return String(loan.id) === term;
         } else {
-          const borrowerAddress = loan.borrower || '';
-          return borrowerAddress.toLowerCase().includes(term.toLowerCase());
+          return loan.borrower.toLowerCase().includes(term.toLowerCase());
         }
       });
   }, [loans, showMyLoansOnly, userAddress, searchTerm, selectedTier, borrowerTierMap]);
@@ -209,21 +195,15 @@ export default function InvestmentRequestsPage() {
   const isLoading = isLoadingCount || isLoadingLoansData;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pt-20">
       <Header />
       
       <section className="bg-gradient-to-r from-background to-card border-b">
         <div className="container mx-auto px-4 py-8 text-center">
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <Image
-                src="/Logo.png"
-                alt="LenDeFi Logo"
-                width={40}
-                height={40}
-                className="rounded"
-              />
-              <h1 className="text-3xl font-bold">LenDeFi</h1>
+              <Image src="/Logo.png" alt="LenDeFi Logo" width={40} height={40} className="rounded" />
+              <h1 className="text-3xl font-bold ">LenDeFi</h1>
             </div>
             <p className="text-lg text-muted-foreground leading-relaxed">
               Decentralized P2P lending powered by Smart Contracts. Connect
@@ -236,45 +216,50 @@ export default function InvestmentRequestsPage() {
       <main className="container mx-auto px-4 py-8">
         <StatsCards loans={loans} />
         
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-            <div className="w-full sm:w-72">
+        <div className="flex flex-col items-center mb-8 gap-4">
+          <div className="flex w-full max-w-4xl flex-col lg:flex-row items-center gap-4">
+            <div className="w-full lg:flex-1">
               <Input
                 type="text"
                 placeholder="Search by ID or Borrower Address..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-card border-border"
+                className="bg-card border-border h-11"
               />
             </div>
-            <Tabs
-              value={selectedTier}
-              onValueChange={(value) => setSelectedTier(value)}
-              className="w-full sm:w-auto"
-            >
-              <TabsList className="grid w-full grid-cols-4 sm:w-auto h-10 bg-card border border-border">
-                {tierOptions.map(option => (
-                  <TabsTrigger
-                    key={option.value}
-                    value={option.value.toString()}
-                    className={option.className}
-                  >
-                    {option.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </div>
 
-          {/* Grupo Direito: Switch "My Loans" */}
+            <div className="w-full lg:w-auto">
+              <Tabs
+                value={selectedTier}
+                onValueChange={(value) => setSelectedTier(value)}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-4 h-11 bg-card border border-border">
+                  {tierOptions.map(option => (
+                    <TabsTrigger
+                      key={option.value}
+                      value={option.value.toString()}
+                      className={`flex items-center justify-center gap-2 ${option.className}`}
+                    >
+                      {option.icon}
+                      {option.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+          
           {isConnected && (
-            <div className="flex items-center space-x-2 self-start md:self-center">
-              <Switch
-                id="my-loans-filter"
-                checked={showMyLoansOnly}
-                onCheckedChange={setShowMyLoansOnly}
-              />
-              <Label htmlFor="my-loans-filter">Show My Loans Only</Label>
+            <div className="flex w-full max-w-4xl items-center justify-end gap-4">
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="my-loans-filter"
+                        checked={showMyLoansOnly}
+                        onCheckedChange={setShowMyLoansOnly}
+                    />
+                    <Label htmlFor="my-loans-filter">Show My Loans</Label>
+                </div>
             </div>
           )}
         </div>
@@ -305,21 +290,13 @@ export default function InvestmentRequestsPage() {
 
         {totalPages > 1 && (
           <div className="mt-8 flex justify-center items-center gap-4">
-            <Button
-              onClick={handlePrevPage}
-              disabled={currentPage === 1}
-              className="bg-transparent text-white hover:text-neutral-700 hover:bg-transparent"
-            >
+            <Button onClick={handlePrevPage} disabled={currentPage === 1} variant="ghost">
               Previous
             </Button>
             <span className="text-sm font-medium">
               Page {currentPage} of {totalPages}
             </span>
-            <Button
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              className="bg-transparent text-white hover:text-neutral-700 hover:bg-transparent"
-            >
+            <Button onClick={handleNextPage} disabled={currentPage === totalPages} variant="ghost">
               Next
             </Button>
           </div>

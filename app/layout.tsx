@@ -1,7 +1,10 @@
+// app/layout.tsx
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientWrapper from "./clientwrapper";
+import { Header } from "@/app/components/layout/Header"; // 1. Importe o Header
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,9 +31,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <main className="container mx-auto p-4">
-          <ClientWrapper>{children}</ClientWrapper>
-        </main>
+        <ClientWrapper>
+          {/* 2. Adicione o componente Header aqui, dentro do ClientWrapper */}
+          <Header />
+
+          {/* 3. Adicione padding-top para compensar a altura do header fixo */}
+          <main className="container mx-auto p-4 pt-10">
+            {children}
+          </main>
+        </ClientWrapper>
       </body>
     </html>
   );
