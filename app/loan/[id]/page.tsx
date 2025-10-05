@@ -1,7 +1,7 @@
 "use client"
 
-import type React from "react"
-import { useState, useMemo } from "react"
+// 1. Importar useState e useEffect
+import React, { useState, useMemo, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { useAccount, useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 import { formatUnits, type Address } from "viem"
@@ -150,25 +150,45 @@ function useBorrowerHistory(borrowerAddress?: Address) {
   return { history, averageScore, tierData, isLoading: isLoadingCount || isLoadingLoans }
 }
 
+// 2. MODIFICADO: Componente DetailItem para aceitar um sub-valor (para o preço em BRL)
 function DetailItem({
   icon,
   label,
   value,
+  subValue,
   valueClass = "",
-}: { icon: React.ReactNode; label: string; value: React.ReactNode; valueClass?: string }) {
+}: {
+  icon: React.ReactNode
+  label: string
+  value: React.ReactNode
+  subValue?: React.ReactNode
+  valueClass?: string
+}) {
   return (
     <div className="group flex flex-col space-y-2 p-4 rounded-lg bg-muted/30 border border-border/50 transition-all hover:bg-muted/50 hover:border-primary/30">
       <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
         <span className="text-primary/70 group-hover:text-primary transition-colors">{icon}</span>
         <span>{label}</span>
       </div>
-      <div className={`text-2xl font-bold tracking-tight ${valueClass || "text-foreground"}`}>{value}</div>
+      <div>
+        <div className={`text-2xl font-bold tracking-tight ${valueClass || "text-foreground"}`}>{value}</div>
+        {subValue && <div className="text-sm font-bold text-muted-foreground mt-1">{subValue}</div>}
+      </div>
     </div>
   )
 }
 
-// MODIFICADO: Card de histórico ajustado
-function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) {
+
+// 3. MODIFICADO: Card de histórico para receber o preço do ETH e a função de formatação
+function BorrowerHistoryCard({
+  borrowerAddress,
+  ethPriceBRL,
+  formatBrlValue,
+}: {
+  borrowerAddress: Address
+  ethPriceBRL: number | null
+  formatBrlValue: (ethValue: number) => string | null
+}) {
   const { history, averageScore, isLoading } = useBorrowerHistory(borrowerAddress)
 
   if (isLoading) {
@@ -227,6 +247,7 @@ function BorrowerHistoryCard({ borrowerAddress }: { borrowerAddress: Address }) 
             icon={<DollarSign size={16} />}
             label="Total Borrowed"
             value={`${history.totalValue.toFixed(2)} ETH`}
+            subValue={ethPriceBRL ? formatBrlValue(history.totalValue) : undefined}
           />
            <DetailItem
             icon={<BadgePercent size={16} />}
@@ -373,6 +394,33 @@ export default function LoanDetailPage() {
 
   const { writeContract, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  // 4. Adicionar estado para o preço do ETH em BRL
+  const [ethPriceBRL, setEthPriceBRL] = useState<number | null>(null)
+
+  // 5. useEffect para buscar o preço do ETH na API
+  useEffect(() => {
+    const fetchEthPrice = async () => {
+      try {
+        const response = await fetch("/api/eth-price")
+        if (!response.ok) {
+          throw new Error("Falha ao buscar o preço do ETH.")
+        }
+        const data = await response.json()
+        setEthPriceBRL(data.brlPrice)
+      } catch (error) {
+        console.error("Não foi possível buscar o preço do ETH:", error)
+      }
+    }
+    fetchEthPrice()
+  }, [])
+
+  // 6. Função para formatar os valores em BRL
+  const formatBrlValue = (ethValue: number) => {
+    if (!ethPriceBRL) return null
+    const brlValue = ethValue * ethPriceBRL
+    return `${brlValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BRL`
+  }
 
   const { data: loanData, isLoading: isLoadingLoan } = useReadContract({
     abi: LoanMarketABI,
@@ -763,10 +811,12 @@ export default function LoanDetailPage() {
                 <CardDescription>Key details and conditions</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 relative">
+                {/* 7. Adicionar subValue aos DetailItems com os valores em BRL */}
                 <DetailItem
                   icon={<DollarSign size={18} />}
                   label="Amount"
                   value={`${parseFloat(formatUnits(loan.amountRequested, 18)).toString()} ETH`}
+                  subValue={formatBrlValue(Number(formatUnits(loan.amountRequested, 18)))}
                 />
                 <DetailItem
                   icon={<TrendingUp size={18} />}
@@ -784,12 +834,18 @@ export default function LoanDetailPage() {
                   label="Collateral"
                   value={loan.collateralAmount > 0 ? `${parseFloat(formatUnits(loan.collateralAmount, 18)).toString()} ETH` : "None"}
                   valueClass={loan.collateralAmount > 0 ? "text-foreground" : "text-muted-foreground"}
+                  subValue={
+                    loan.collateralAmount > 0
+                      ? formatBrlValue(Number(formatUnits(loan.collateralAmount, 18)))
+                      : undefined
+                  }
                 />
                 <DetailItem
                   icon={<DollarSign size={18} />}
                   label="Repayment"
                   value={`${parseFloat(repaymentWithInterest.toFixed(6))} ETH`}
                   valueClass="text-primary"
+                  subValue={formatBrlValue(repaymentWithInterest)}
                 />
                 <DetailItem
                   icon={<Activity size={18} />}
@@ -801,7 +857,14 @@ export default function LoanDetailPage() {
               </CardContent>
             </Card>
             
-            {loan.borrower && <BorrowerHistoryCard borrowerAddress={loan.borrower} />}
+            {/* 8. Passar props para o BorrowerHistoryCard */}
+            {loan.borrower && (
+              <BorrowerHistoryCard
+                borrowerAddress={loan.borrower}
+                ethPriceBRL={ethPriceBRL}
+                formatBrlValue={formatBrlValue}
+              />
+            )}
           </div>
 
           <div className="space-y-6">
