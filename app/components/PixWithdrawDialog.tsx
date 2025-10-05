@@ -242,7 +242,7 @@ export function PixWithdrawDialog({ open, onOpenChange }: { open: boolean, onOpe
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pix-key">Your PIX Key</Label>
+                  <Label htmlFor="pix-key">PIX Key</Label>
                   <Input id="pix-key" placeholder="Your PIX key" value={pixKey} onChange={(e) => setPixKey(e.target.value)} required />
                 </div>
                 
