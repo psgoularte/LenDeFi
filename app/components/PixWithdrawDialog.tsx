@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { parseEther } from "viem";
+import { parseEther, BaseError } from "viem";
 
 import { Button } from "@/cache/components/ui/button";
 import {
@@ -31,12 +31,8 @@ if (!PLATFORM_WALLET_ADDRESS) {
     throw new Error("FATAL: NEXT_PUBLIC_PLATFORM_WALLET_ADDRESS is not defined in .env.local");
 }
 
-// 1. Componente agora aceita props para ser controlado externamente
 export function PixWithdrawDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
-  // 2. O estado 'open' interno foi removido daqui
   const [step, setStep] = useState(1);
-
-  // --- Form Fields ---
   const [name, setName] = useState("");
   const [cpf, setCpf] = useState("");
   const [email, setEmail] = useState("");
@@ -48,13 +44,11 @@ export function PixWithdrawDialog({ open, onOpenChange }: { open: boolean, onOpe
   const { sendTransaction, data: hash, isPending, error: wagmiError } = useSendTransaction();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  // --- UI Control States ---
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [withdrawalId, setWithdrawalId] = useState<string | null>(null);
 
-  // --- Price and Quote States ---
   const [ethPriceBRL, setEthPriceBRL] = useState<number | null>(null);
   const [brlAmount, setBrlAmount] = useState<string>("");
   const [isPriceLoading, setIsPriceLoading] = useState(true);
@@ -113,7 +107,6 @@ export function PixWithdrawDialog({ open, onOpenChange }: { open: boolean, onOpe
       openConnectModal?.();
       return;
     }
-    // Usa a função recebida via props
     onOpenChange(isOpen);
     if (!isOpen) {
       resetState();
@@ -197,12 +190,19 @@ export function PixWithdrawDialog({ open, onOpenChange }: { open: boolean, onOpe
     }
   }, [isSuccess, hash, name, cpf, email, amountEth, emailCode, pixKey, pixKeyType]);
 
-
   const isLoadingTransaction = isPending || isConfirming;
+
+  let displayErrorMessage = "";
+  if (wagmiError) {
+    if (wagmiError instanceof BaseError) {
+      displayErrorMessage = wagmiError.shortMessage;
+    } else {
+      displayErrorMessage = wagmiError.message;
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      {/* 3. O DialogTrigger foi removido daqui */}
       <DialogContent className="sm:max-w-[425px]">
         {/* --- Step 1: Data Collection --- */}
         {step === 1 && (
@@ -242,7 +242,7 @@ export function PixWithdrawDialog({ open, onOpenChange }: { open: boolean, onOpe
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pix-key">PIX Key</Label>
+                  <Label htmlFor="pix-key">Your PIX Key</Label>
                   <Input id="pix-key" placeholder="Your PIX key" value={pixKey} onChange={(e) => setPixKey(e.target.value)} required />
                 </div>
                 
@@ -304,11 +304,11 @@ export function PixWithdrawDialog({ open, onOpenChange }: { open: boolean, onOpe
               </Button>
             </div>
             <DialogFooter className="text-center">
-                {wagmiError && (
-                    <p className="text-sm text-red-500 w-full">
-                        Error: {(wagmiError as any).shortMessage || wagmiError.message}
-                    </p>
-                )}
+              {displayErrorMessage && (
+                  <p className="text-sm text-red-500 w-full">
+                      Error: {displayErrorMessage}
+                  </p>
+              )}
             </DialogFooter>
           </>
         )}
