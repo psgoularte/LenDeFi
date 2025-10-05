@@ -7,8 +7,9 @@ import { sepolia } from 'viem/chains';
 if (
     !process.env.UPSTASH_REDIS_REST_URL || 
     !process.env.UPSTASH_REDIS_REST_TOKEN ||
-    !process.env.SEPOLIA_URL ||      // Nova verificação
-    !process.env.PLATFORM_WALLET_ADDRESS    // Nova verificação
+    !process.env.SEPOLIA_URL ||      
+    !process.env.NEXT_PUBLIC_PLATFORM_WALLET_ADDRESS
+    
 ) {
     console.error("FATAL: Missing required environment variables");
     throw new Error("Incomplete server configuration.");
@@ -27,7 +28,7 @@ const viemClient = createPublicClient({
 });
 
 // --- Server-side constant for security check ---
-const SERVER_PLATFORM_WALLET_ADDRESS = process.env.PLATFORM_WALLET_ADDRESS;
+const SERVER_PLATFORM_WALLET_ADDRESS = process.env.NEXT_PUBLIC_PLATFORM_WALLET_ADDRESS
 
 export async function POST(request: Request) {
   const withdrawalId = `PIX-WITHDRAW-${Date.now()}`;
