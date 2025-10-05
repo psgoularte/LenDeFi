@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/cache/components/ui/
 import { Badge } from "@/cache/components/ui/badge"
 import { Button } from "@/cache/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/cache/components/ui/tooltip"
-import { Star, TrendingUp, DollarSign, ShieldCheck, Sparkles, Info, Copy, Check } from "lucide-react"
+import { Star, TrendingUp, DollarSign, ShieldCheck, Sparkles, Info, Copy, Check, Medal } from "lucide-react"
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 import Link from "next/link"
 import { useConnectModal } from "@rainbow-me/rainbowkit"
@@ -102,17 +102,20 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
       case 0: // Bronze
         return { 
           text: "Bronze", 
-          className: "text-amber-600 border-amber-700 font-semibold" 
+          className: "text-amber-600 border-amber-700 font-semibold",
+          medalClass: "text-amber-600"
         };
       case 1: // Silver
         return { 
           text: "Silver", 
-          className: "text-slate-500 border-slate-500 font-semibold" 
+          className: "text-slate-500 border-slate-500 font-semibold",
+          medalClass: "text-slate-500"
         };
       case 2: // Gold
         return { 
           text: "Gold", 
-          className: "text-amber-500 border-amber-500 font-semibold" 
+          className: "text-amber-500 border-amber-500 font-semibold",
+          medalClass: "text-amber-500"
         };
       default:
         return null;
@@ -431,6 +434,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
               <div className="flex items-center flex-wrap gap-2 pt-1">
                 {tierInfo && (
                   <Badge variant="outline" className={`text-xs ${tierInfo.className}`}>
+                    <Medal className={`h-8 w-8 ${tierInfo.medalClass}`} />
                     {tierInfo.text}
                   </Badge>
                 )}

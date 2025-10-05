@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useAccount, useReadContract, useReadContracts } from "wagmi";
+import { Medal } from "lucide-react";
 import { LoanMarketABI, LOAN_MARKET_ADDRESS } from "@/app/lib/contracts";
 import type { Loan } from "@/app/lib/types";
 
@@ -34,11 +35,43 @@ export default function InvestmentRequestsPage() {
   const itemsPerPage = 9;
   const { isConnected, address: userAddress } = useAccount();
 
-  const tierOptions: { value: Tier; label: string; className: string }[] = [
-    { value: -1, label: "All Loans", className: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-    { value: 2, label: "Gold", className: "data-[state=active]:bg-yellow-500 data-[state=active]:text-black hover:bg-yellow-600/50" },
-    { value: 1, label: "Silver", className: "data-[state=active]:bg-slate-500 data-[state=active]:text-black hover:bg-slate-600/50" },
-    { value: 0, label: "Bronze", className: "data-[state=active]:bg-amber-700 data-[state=active]:text-black hover:bg-amber-800/50" },
+  const tierOptions: Array<{
+    value: Tier;
+    label: string;
+    boxClass?: string;
+    textClass?: string;
+    iconBg?: string;
+    medalClass?: string;
+    activeClass?: string;
+  }> = [
+  { value: -1, label: "All Loans", boxClass: "bg-card/0", textClass: "text-sm", activeClass: "group-data-[state=active]:bg-primary group-data-[state=active]:text-primary-foreground hover:bg-primary/10" },
+    {
+      value: 2,
+      label: "Gold",
+      boxClass:
+        "bg-gradient-to-br from-yellow-400/8 to-amber-500/8 border-yellow-400/40 shadow-sm shadow-yellow-400/10",
+      textClass: "text-yellow-400 font-semibold",
+      iconBg: "bg-yellow-400/10",
+      medalClass: "text-yellow-400",
+    },
+    {
+      value: 1,
+      label: "Silver",
+      boxClass:
+        "bg-gradient-to-br from-slate-400/8 to-slate-600/8 border-slate-400/40 shadow-sm shadow-slate-400/10",
+      textClass: "text-slate-400 font-semibold",
+      iconBg: "bg-slate-400/10",
+      medalClass: "text-slate-400",
+    },
+    {
+      value: 0,
+      label: "Bronze",
+      boxClass:
+        "bg-gradient-to-br from-amber-600/8 to-orange-700/8 border-amber-600/40 shadow-sm shadow-amber-600/10",
+      textClass: "text-amber-600 font-semibold",
+      iconBg: "bg-amber-600/10",
+      medalClass: "text-amber-600",
+    },
   ];
 
   const { data: loanCount, isLoading: isLoadingCount } = useReadContract({
@@ -210,8 +243,6 @@ export default function InvestmentRequestsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
       <section className="bg-gradient-to-r from-background to-card border-b">
         <div className="container mx-auto px-4 py-8 text-center">
           <div className="max-w-3xl mx-auto">
@@ -238,7 +269,7 @@ export default function InvestmentRequestsPage() {
         
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-            <div className="w-full sm:w-72">
+            <div className="w-full sm:w-270">
               <Input
                 type="text"
                 placeholder="Search by ID or Borrower Address..."
@@ -252,23 +283,32 @@ export default function InvestmentRequestsPage() {
               onValueChange={(value) => setSelectedTier(value)}
               className="w-full sm:w-auto"
             >
-              <TabsList className="grid w-full grid-cols-4 sm:w-auto h-10 bg-card border border-border">
+              <TabsList className="flex flex-wrap items-center gap-2 sm:gap-3">
                 {tierOptions.map(option => (
                   <TabsTrigger
                     key={option.value}
                     value={option.value.toString()}
-                    className={option.className}
+                    className="p-0 group"
                   >
-                    {option.label}
+                    <div
+                      className={`flex items-center gap-2 px-2 py-1 rounded-sm transition transform opacity-60 hover:opacity-100 hover:scale-[1.02] ${option.boxClass} ${option.activeClass ?? ''} group-data-[state=active]:opacity-100 group-data-[state=active]:scale-[1.02] group-data-[state=active]:shadow-lg`}
+                    >
+                      {option.medalClass && (
+                        <div className={`flex items-center justify-center rounded-full p-1 ${option.iconBg}`}>
+                          <Medal className={`h-4 w-4 ${option.medalClass}`} />
+                        </div>
+                      )}
+                      <span className={`${option.textClass}`}>{option.label}</span>
+                    </div>
                   </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
           </div>
-
-          {/* Grupo Direito: Switch "My Loans" */}
+        </div>
+        {/* Grupo Direito: Switch "My Loans" */}
           {isConnected && (
-            <div className="flex items-center space-x-2 self-start md:self-center">
+            <div className="flex items-right space-x-2 self-start md:self-center">
               <Switch
                 id="my-loans-filter"
                 checked={showMyLoansOnly}
@@ -277,9 +317,8 @@ export default function InvestmentRequestsPage() {
               <Label htmlFor="my-loans-filter">Show My Loans Only</Label>
             </div>
           )}
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 mt-8">
           {isLoading ? (
             <p className="col-span-full text-center text-muted-foreground">
               Loading loans...

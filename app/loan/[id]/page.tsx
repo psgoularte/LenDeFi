@@ -27,6 +27,7 @@ import {
   Sparkles,
   CheckCircle,
   XCircle,
+  Medal,
 } from "lucide-react"
 import Link from "next/link"
 import { useConnectModal } from "@rainbow-me/rainbowkit"
@@ -426,17 +427,23 @@ export default function LoanDetailPage() {
       case 0: // Bronze
         return { 
           text: "Bronze", 
-          className: "text-amber-600 border-amber-700 font-semibold" 
+          className: "text-amber-600 border-amber-700 font-semibold",
+          medalClass: "text-amber-600",
+          iconBg: "bg-amber-600/10",
         };
       case 1: // Silver
         return { 
           text: "Silver", 
-          className: "text-slate-500 border-slate-500 font-semibold" 
+          className: "text-slate-500 border-slate-500 font-semibold",
+          medalClass: "text-slate-500",
+          iconBg: "bg-slate-400/10",
         };
       case 2: // Gold
         return { 
           text: "Gold", 
-          className: "text-amber-500 border-amber-500 font-semibold" 
+          className: "text-amber-500 border-amber-500 font-semibold",
+          medalClass: "text-amber-500",
+          iconBg: "bg-yellow-400/10",
         };
       default:
         return null;
@@ -727,8 +734,11 @@ export default function LoanDetailPage() {
               <p className="text-sm text-muted-foreground font-mono break-all">{loan.borrower}</p>
               {tierInfo && (
                 <div className="mt-2">
-                  <Badge variant="outline" className={`text-base px-3 py-1 ${tierInfo.className}`}>
-                    {tierInfo.text}
+                  <Badge variant="outline" className={`flex items-center gap-2 text-sm px-2 py-1 ${tierInfo.className}`}>
+                    <div className={`flex items-center justify-center rounded-full p-1 ${tierInfo.iconBg}`}>
+                      <Medal className={`h-4 w-4 ${tierInfo.medalClass}`} strokeWidth={1.5} />
+                    </div>
+                    <span className="font-medium uppercase tracking-wider">{tierInfo.text}</span>
                   </Badge>
                 </div>
               )}
