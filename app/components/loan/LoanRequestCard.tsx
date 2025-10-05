@@ -433,7 +433,7 @@ export function LoanRequestCard({ request, completedLoans }: LoanRequestCardProp
 
   return (
     <Link href={`/loan/${request.id}`} passHref className="no-underline">
-      <Card className="h-[550px] border border-transparent hover:border-primary/40 transition-all duration-300 flex flex-col group">
+      <Card className="h-[560px] border border-transparent hover:border-primary/40 transition-all duration-300 flex flex-col group">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
