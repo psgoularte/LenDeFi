@@ -7,8 +7,31 @@ contract LoanMarket {
 
     uint private _status = 1; // Guarda de re-entrância
 
-    constructor() {
+    // --- Variáveis para os Níveis de Risco (modificáveis pelo owner) --- // MODIFICADO
+    uint256 public bronzeLoanLimit;
+    uint256 public silverLoanLimit;
+    uint8 public goldReqRepaid;
+    uint8 public silverReqRepaid;
+    uint8 public goldReqAvgScorePercent;
+    uint8 public silverReqAvgScorePercent;
+    
+    constructor(
+        address payable _feeWallet,
+        uint256 _bronzeLoanLimit,
+        uint256 _silverLoanLimit,
+        uint8 _silverReqRepaid,
+        uint8 _silverReqAvgScore,
+        uint8 _goldReqRepaid,
+        uint8 _goldReqAvgScore
+    ) {
         owner = msg.sender;
+        feeWallet = _feeWallet;
+        bronzeLoanLimit = _bronzeLoanLimit;
+        silverLoanLimit = _silverLoanLimit;
+        silverReqRepaid = _silverReqRepaid;
+        silverReqAvgScorePercent = _silverReqAvgScore;
+        goldReqRepaid = _goldReqRepaid;
+        goldReqAvgScorePercent = _goldReqAvgScore;
     }
 
     modifier onlyOwner() {
@@ -24,6 +47,7 @@ contract LoanMarket {
     }
 
     // --- Eventos ---
+    event TierRequirementsUpdated(address indexed owner); // NOVO
     event LoanCreated(uint indexed loanId, address indexed borrower, uint amountRequested);
     event Funded(uint indexed loanId, address indexed investor, uint amount);
     event WithdrawnByBorrower(uint indexed loanId, uint amount);
@@ -36,6 +60,15 @@ contract LoanMarket {
     event CollateralClaimed(uint indexed loanId, address indexed investor, uint grossAmount, uint fee, uint netAmount);
 
     enum Status { Open, Funded, Active, Repaid, Defaulted, Cancelled }
+    enum RiskTier { Bronze, Silver, Gold }
+
+    struct BorrowerProfile {
+        uint repaidLoansCount;
+        uint weightedScoreSum;
+        uint totalAmountRepaid;
+    }
+
+    mapping(address => BorrowerProfile) public borrowerProfiles;
 
     struct Loan {
         address borrower;
@@ -57,7 +90,25 @@ contract LoanMarket {
     Loan[] public loans;
     mapping(uint => uint) public withdrawableOf;
 
-    // --- Funções Principais ---
+    // --- Função para alterar os limites e requisitos --- // NOVO
+    function setTierRequirements(
+        uint256 _bronzeLoanLimit,
+        uint256 _silverLoanLimit,
+        uint8 _silverReqRepaid,
+        uint8 _silverReqAvgScore,
+        uint8 _goldReqRepaid,
+        uint8 _goldReqAvgScore
+    ) external onlyOwner {
+        bronzeLoanLimit = _bronzeLoanLimit;
+        silverLoanLimit = _silverLoanLimit;
+        silverReqRepaid = _silverReqRepaid;
+        silverReqAvgScorePercent = _silverReqAvgScore;
+        goldReqRepaid = _goldReqRepaid;
+        goldReqAvgScorePercent = _goldReqAvgScore;
+        
+        emit TierRequirementsUpdated(msg.sender);
+    }
+
     function createLoan(
         uint amountRequested,
         uint interestBps,
@@ -65,6 +116,13 @@ contract LoanMarket {
         uint fundingDeadline,
         uint collateralAmount
     ) external payable returns (uint loanId) {
+        RiskTier tier = getBorrowerTier(msg.sender);
+        if (tier == RiskTier.Bronze) {
+            require(amountRequested <= bronzeLoanLimit, "Bronze tier limit exceeded"); // MODIFICADO
+        } else if (tier == RiskTier.Silver) {
+            require(amountRequested <= silverLoanLimit, "Silver tier limit exceeded"); // MODIFICADO
+        }
+
         require(amountRequested > 0, "Amount must be greater than 0");
         require(fundingDeadline > block.timestamp, "Deadline must be in the future");
         require(msg.value == collateralAmount, "Collateral mismatch");
@@ -90,7 +148,7 @@ contract LoanMarket {
         loanId = loans.length - 1;
         emit LoanCreated(loanId, msg.sender, amountRequested);
     }
-
+    
     receive() external payable {
         revert("Use fundLoan(loanId) to send ETH");
     }
@@ -161,7 +219,7 @@ contract LoanMarket {
 
         if (L.collateralAmount > 0) {
             require(!L.collateralClaimed, "Collateral already handled");
-            L.collateralClaimed = true; // Marca a garantia como devolvida
+            L.collateralClaimed = true;
             (bool ok, ) = msg.sender.call{value: L.collateralAmount}("");
             require(ok, "Collateral refund failed");
             emit CollateralWithdrawn(loanId, L.borrower, L.collateralAmount);
@@ -200,15 +258,23 @@ contract LoanMarket {
             require(s, "Send failed");
             emit InvestorWithdraw(loanId, msg.sender, available);
         }
-
-        _leaveScore(L, loanId, score);
+        
+        _leaveScore(L, loanId, score, true);
     }
 
-    function _leaveScore(Loan storage L, uint loanId, uint8 score) internal {
+    function _leaveScore(Loan storage L, uint loanId, uint8 score, bool updateReputation) internal {
         require(score >= 1 && score <= 5, "Score must be between 1 and 5");
         require(L.score == 0, "Score has already been left");
 
         L.score = score;
+        
+        if (updateReputation) {
+            BorrowerProfile storage profile = borrowerProfiles[L.borrower];
+            profile.repaidLoansCount++;
+            profile.weightedScoreSum += score * L.amountRequested;
+            profile.totalAmountRepaid += L.amountRequested;
+        }
+
         emit ScoreLeft(loanId, msg.sender, score);
     }
 
@@ -260,9 +326,9 @@ contract LoanMarket {
         require(s, "Investor transfer failed");
         emit CollateralClaimed(loanId, L.investor, gross, fee, net);
         
-        _leaveScore(L, loanId, score);
+        _leaveScore(L, loanId, score, false);
     }
-
+    
     function cancelFundedLoan(uint loanId) external nonReentrant {
         Loan storage L = loans[loanId];
         require(msg.sender == L.investor, "Not investor");
@@ -287,5 +353,25 @@ contract LoanMarket {
     // --- Views ---
     function getLoanCount() external view returns (uint) {
         return loans.length;
+    }
+
+    function getBorrowerTier(address borrower) public view returns (RiskTier) {
+        BorrowerProfile storage profile = borrowerProfiles[borrower];
+
+        if (profile.repaidLoansCount == 0 || profile.totalAmountRepaid == 0) {
+            return RiskTier.Bronze;
+        }
+        
+        uint avgScorePercent = (profile.weightedScoreSum * 20) / profile.totalAmountRepaid;
+
+        if (profile.repaidLoansCount >= goldReqRepaid && avgScorePercent > goldReqAvgScorePercent) { // MODIFICADO
+            return RiskTier.Gold;
+        }
+        
+        if (profile.repaidLoansCount >= silverReqRepaid && avgScorePercent > silverReqAvgScorePercent) { // MODIFICADO
+            return RiskTier.Silver;
+        }
+
+        return RiskTier.Bronze;
     }
 }

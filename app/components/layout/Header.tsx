@@ -1,3 +1,5 @@
+// src/components/Header.tsx (arquivo para modificar)
+
 "use client";
 
 import Image from "next/image";
@@ -5,10 +7,11 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { RequestLoanDialog } from "../loan/RequestLoanDialog";
 import { PixRechargeDialog } from "../PixRechargeDialog";
 import { CustomConnectButton } from '../CustomConnectButton';
+import { UserStatus } from "../UserStatus"; // <-- 1. IMPORTE O COMPONENTE
 
 export function Header() {
   return (
-    <header className="border-b bg-card">
+    <header className="fixed border-b bg-card z-10 top-0 left-0 w-full">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -30,6 +33,8 @@ export function Header() {
             />
 
             <PixRechargeDialog />
+            
+            <UserStatus /> {/* <-- 2. ADICIONE O COMPONENTE AQUI */}
             
             <ConnectButton />
           </nav>
